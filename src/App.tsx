@@ -8,7 +8,9 @@ import { CharacterEditor } from "./screens/CharacterEditor";
 import { CharacterHome } from "./screens/CharacterHome";
 import { CharacterProfile } from "./screens/CharacterProfile";
 import { PostDetail } from "./screens/PostDetail";
+import { ComposeScreen } from "./screens/ComposeScreen";
 import { TabBar } from "./components/TabBar";
+import { Toast } from "./components/Toast";
 import { CharacterSwitcher } from "./components/CharacterSwitcher";
 import { CommandPalette } from "./components/CommandPalette";
 
@@ -82,6 +84,9 @@ function Shell() {
     case "post":
       screen = <PostDetail id={route.id} />;
       break;
+    case "compose":
+      screen = <ComposeScreen replyTo={route.replyTo} />;
+      break;
     default:
       screen = <NotReady label={route.name} />;
   }
@@ -105,6 +110,7 @@ function Shell() {
       )}
       <CharacterSwitcher open={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <Toast />
     </>
   );
 }

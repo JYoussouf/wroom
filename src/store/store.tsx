@@ -100,6 +100,13 @@ interface StoreValue {
   setDraft: (key: string, body: string) => void;
   clearDraft: (key: string) => void;
 
+  // ---- ephemeral UI ----
+  /** Post id to briefly highlight after publishing (the "slides in" feel). */
+  flashPostId: string | null;
+  flashPost: (id: string) => void;
+  toast: string | null;
+  showToast: (message: string) => void;
+
   // ---- data management ----
   exportRoom: () => string;
   importRoom: (text: string) => Result;
@@ -121,7 +128,11 @@ function obfuscate(pw: string): string {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [db, setDb] = useState<WroomDB>(() => loadDB());
   const [activeCharacterId, setActiveCharacterId] = useState<string | null>(null);
+  const [flashPostId, setFlashPostId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const saveTimer = useRef<number | null>(null);
+  const flashTimer = useRef<number | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
   // Debounced persistence on every change.
   useEffect(() => {
@@ -527,6 +538,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setDb(buildSeedDB());
   }, []);
 
+  // ---- ephemeral UI ----
+  const flashPost = useCallback((id: string) => {
+    setFlashPostId(id);
+    if (flashTimer.current) window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setFlashPostId(null), 1400);
+  }, []);
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2600);
+  }, []);
+
   const value: StoreValue = {
     db,
     storageOK: STORAGE_OK,
@@ -559,6 +583,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     getDraft,
     setDraft,
     clearDraft,
+    flashPostId,
+    flashPost,
+    toast,
+    showToast,
     exportRoom,
     importRoom,
     resetEverything,

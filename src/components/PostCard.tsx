@@ -21,7 +21,8 @@ interface Props {
 
 /** A single post, rendered with the same editorial type used for writing. */
 export function PostCard({ post, threadLineTop, threadLineBottom, emphasis }: Props) {
-  const { db, activeCharacterId, toggleLike, toggleRepost } = useStore();
+  const { db, activeCharacterId, toggleLike, toggleRepost, flashPostId } =
+    useStore();
   const { push } = useNav();
   const author = resolveAccount(db, post.characterId);
   if (!author) return null;
@@ -44,7 +45,9 @@ export function PostCard({ post, threadLineTop, threadLineBottom, emphasis }: Pr
 
   return (
     <article
-      className={`post ${emphasis ? "post-emphasis" : ""}`}
+      className={`post ${emphasis ? "post-emphasis" : ""} ${
+        flashPostId === post.id ? "post-flash" : ""
+      }`}
       onClick={openDetail}
       style={{ ["--accent" as string]: accent }}
     >
