@@ -12,6 +12,7 @@ import { ComposeScreen } from "./screens/ComposeScreen";
 import { ConnectionsScreen } from "./screens/ConnectionsScreen";
 import { GraphScreen } from "./screens/GraphScreen";
 import { ShareScreen } from "./screens/ShareScreen";
+import { SettingsScreen } from "./screens/SettingsScreen";
 import { TabBar } from "./components/TabBar";
 import { Toast } from "./components/Toast";
 import { CharacterSwitcher } from "./components/CharacterSwitcher";
@@ -99,8 +100,11 @@ function Shell() {
     case "share":
       screen = <ShareScreen id={route.id} />;
       break;
+    case "settings":
+      screen = <SettingsScreen />;
+      break;
     default:
-      screen = <NotReady label={route.name} />;
+      screen = <NotReady label="Not found" />;
   }
 
   // The tab bar belongs to the onstage (stepped-in) experience.

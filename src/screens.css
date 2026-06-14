@@ -1105,3 +1105,60 @@
 .graph-list-row .who:hover {
   color: var(--accent);
 }
+
+/* ---- Settings ---- */
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+}
+.group-title {
+  font-size: var(--step-2);
+}
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  cursor: pointer;
+}
+.delete-row {
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.delete-row:last-child {
+  border-bottom: none;
+}
+
+/* ---- Confirm dialog ---- */
+.confirm {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: var(--s-5);
+  animation: pop 0.2s var(--ease) both;
+}
+.confirm h3 {
+  font-size: var(--step-2);
+  margin-bottom: var(--s-2);
+}

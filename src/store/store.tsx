@@ -112,6 +112,7 @@ interface StoreValue {
   importRoom: (text: string) => Result;
   resetEverything: () => void;
   reseedDemo: () => void;
+  deleteAccount: () => void;
 }
 
 const Ctx = createContext<StoreValue | null>(null);
@@ -538,6 +539,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setDb(buildSeedDB());
   }, []);
 
+  const deleteAccount = useCallback(() => {
+    setActiveCharacterId(null);
+    setDb((d) => {
+      const authorId = d.session.authorId;
+      if (!authorId) return d;
+      const charIds = new Set(
+        d.characters.filter((c) => c.authorId === authorId).map((c) => c.id)
+      );
+      const worldIds = new Set(
+        d.worldAccounts.filter((w) => w.authorId === authorId).map((w) => w.id)
+      );
+      return {
+        ...d,
+        authors: d.authors.filter((a) => a.id !== authorId),
+        characters: d.characters.filter((c) => c.authorId !== authorId),
+        worldAccounts: d.worldAccounts.filter((w) => w.authorId !== authorId),
+        follows: d.follows.filter(
+          (f) => !charIds.has(f.followerId) && !charIds.has(f.followeeId) && !worldIds.has(f.followeeId)
+        ),
+        posts: d.posts.filter((p) => !charIds.has(p.characterId)),
+        session: { authorId: null },
+      };
+    });
+  }, []);
+
   // ---- ephemeral UI ----
   const flashPost = useCallback((id: string) => {
     setFlashPostId(id);
@@ -591,6 +617,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     importRoom,
     resetEverything,
     reseedDemo,
+    deleteAccount,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
