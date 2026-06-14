@@ -79,7 +79,7 @@ export function CharacterProfile({ id }: { id: string }) {
                   Edit
                 </button>
               )}
-              {acc.kind === "character" && acc.privacy === "shareable" && (
+              {isMineToEdit && (
                 <button className="btn" onClick={() => push({ name: "share", id })}>
                   <IconExport size={16} /> Share
                 </button>

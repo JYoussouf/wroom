@@ -11,6 +11,7 @@ import { PostDetail } from "./screens/PostDetail";
 import { ComposeScreen } from "./screens/ComposeScreen";
 import { ConnectionsScreen } from "./screens/ConnectionsScreen";
 import { GraphScreen } from "./screens/GraphScreen";
+import { ShareScreen } from "./screens/ShareScreen";
 import { TabBar } from "./components/TabBar";
 import { Toast } from "./components/Toast";
 import { CharacterSwitcher } from "./components/CharacterSwitcher";
@@ -94,6 +95,9 @@ function Shell() {
       break;
     case "graph":
       screen = <GraphScreen />;
+      break;
+    case "share":
+      screen = <ShareScreen id={route.id} />;
       break;
     default:
       screen = <NotReady label={route.name} />;
