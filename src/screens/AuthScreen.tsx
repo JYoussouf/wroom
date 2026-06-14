@@ -128,7 +128,7 @@ export function AuthScreen() {
                 autoComplete={mode === "up" ? "new-password" : "current-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={mode === "up" ? "Choose a password" : "Your password"}
               />
             </div>
 

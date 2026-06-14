@@ -100,6 +100,7 @@ export function GraphScreen() {
                   style={{
                     left: `${(n.x / size) * 100}%`,
                     top: `${(n.y / size) * 100}%`,
+                    ["--accent" as string]: n.c.accentColor,
                   }}
                   onClick={() => push({ name: "profile", id: n.c.id })}
                   title={`${n.c.displayName} (@${n.c.handle})`}

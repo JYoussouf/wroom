@@ -21,7 +21,7 @@ export function CommandPalette({
   open: boolean;
   onClose: () => void;
 }) {
-  const { myCharacters, stepInto, stepOut } = useStore();
+  const { myCharacters, myWorldAccounts, stepInto, stepOut } = useStore();
   const { reset, push } = useNav();
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -71,8 +71,18 @@ export function CommandPalette({
         },
       });
     }
+    for (const w of myWorldAccounts) {
+      list.push({
+        id: w.id,
+        label: `View ${w.name}`,
+        sub: `@${w.handle} · world account`,
+        icon: <Avatar name={w.name} src={w.avatar} accent={w.accentColor} size={26} />,
+        keywords: `${w.name} ${w.handle} world account view profile`,
+        run: () => push({ name: "profile", id: w.id }),
+      });
+    }
     return list;
-  }, [myCharacters, push, reset, stepInto, stepOut]);
+  }, [myCharacters, myWorldAccounts, push, reset, stepInto, stepOut]);
 
   const results = useMemo(() => {
     const s = q.trim().toLowerCase();

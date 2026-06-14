@@ -35,3 +35,7 @@ ios/capacitor-cordova-ios-plugins/
 DerivedData/
 *.xcuserstate
 xcuserdata/
+
+# local beta-test tooling (not part of the app)
+.betatest.mjs
+.sharetest.mjs

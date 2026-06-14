@@ -22,7 +22,7 @@ export function CharacterHome({ onOpenSwitcher }: { onOpenSwitcher: () => void }
   return (
     <>
       {/* One-shot accent wash plays when stepping in — keyed per character. */}
-      <div key={c.id} className="step-flash" aria-hidden />
+      <div key={`flash-${c.id}`} className="step-flash" aria-hidden />
 
       <header className="topbar">
         <div className="row spread center">

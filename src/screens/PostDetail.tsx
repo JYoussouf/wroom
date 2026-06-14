@@ -100,12 +100,14 @@ export function PostDetail({ id }: { id: string }) {
               <div className="post-focus-stats mono-num">
                 {post.repostedBy.length > 0 && (
                   <span>
-                    <strong>{post.repostedBy.length}</strong> reposts
+                    <strong>{post.repostedBy.length}</strong>{" "}
+                    {post.repostedBy.length === 1 ? "repost" : "reposts"}
                   </span>
                 )}
                 {post.likedBy.length > 0 && (
                   <span>
-                    <strong>{post.likedBy.length}</strong> likes
+                    <strong>{post.likedBy.length}</strong>{" "}
+                    {post.likedBy.length === 1 ? "like" : "likes"}
                   </span>
                 )}
               </div>
