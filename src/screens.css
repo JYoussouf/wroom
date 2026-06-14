@@ -1,0 +1,298 @@
+/* =========================================================================
+   Screen + component styles, layered on top of the design system.
+   ========================================================================= */
+
+/* ---- Character card ---- */
+.char-card {
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.16s var(--ease), box-shadow 0.2s var(--ease);
+}
+.char-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+.char-card-hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+.char-card-banner {
+  width: 100%;
+  transition: background var(--dur-switch) var(--ease);
+}
+.char-card-body {
+  padding: 0 var(--s-4) var(--s-4);
+}
+.char-card-avatar {
+  margin-top: -22px;
+}
+.char-card-name {
+  font-size: var(--step-1);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.char-card-voice {
+  color: var(--ink-2);
+  font-size: var(--step--1);
+  font-style: italic;
+  margin: var(--s-2) 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.char-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  flex-wrap: wrap;
+}
+.char-card-meta strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.char-card-action {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+}
+
+/* ---- Room ---- */
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-3);
+}
+@media (max-width: 420px) {
+  .room-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.room-grid.compact {
+  grid-template-columns: 1fr;
+}
+
+.aggregate {
+  display: flex;
+  gap: var(--s-2);
+  margin: var(--s-4) 0;
+}
+.stat {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: var(--s-3);
+  text-align: center;
+}
+.stat .n {
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat .l {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  margin-top: 5px;
+}
+
+.section-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  font-weight: 700;
+  margin: var(--s-5) 0 var(--s-3);
+}
+
+.search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-field svg {
+  position: absolute;
+  left: 12px;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.search-field input {
+  padding-left: 38px;
+}
+
+.activity-item {
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--hairline);
+  width: 100%;
+  text-align: left;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  color: inherit;
+  cursor: pointer;
+}
+.activity-item:last-child {
+  border-bottom: none;
+}
+.activity-body {
+  min-width: 0;
+  flex: 1;
+}
+.activity-body .who {
+  font-weight: 600;
+  font-size: var(--step--1);
+}
+.activity-body .txt {
+  font-family: var(--font-display);
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- Big empty states ---- */
+.empty {
+  text-align: center;
+  padding: var(--s-7) var(--s-4);
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.empty .glyph {
+  font-size: 2.4rem;
+  margin-bottom: var(--s-2);
+}
+.empty h3 {
+  font-size: var(--step-2);
+  margin-bottom: var(--s-2);
+}
+.empty p {
+  color: var(--ink-2);
+  max-width: 34ch;
+  margin: 0 auto var(--s-4);
+}
+
+/* ---- Generic app top bar layout ---- */
+.bar-title {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 600;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  transition: background 0.16s var(--ease), transform 0.12s var(--ease);
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+}
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+/* ---- Editor / live preview ---- */
+.editor-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+.uploader {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--hairline-strong);
+  cursor: pointer;
+  display: block;
+}
+.uploader input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.uploader .hint-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: var(--step--1);
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transition: opacity 0.16s var(--ease);
+}
+.uploader:hover .hint-overlay {
+  opacity: 1;
+}
+
+.accent-swatches {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+.swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--hairline-strong);
+  cursor: pointer;
+  transition: transform 0.12s var(--ease);
+}
+.swatch[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink);
+  transform: scale(1.08);
+}
+
+/* The live profile preview card in the editor */
+.preview-card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.preview-banner {
+  height: 96px;
+  transition: background var(--dur-switch) var(--ease);
+}
+.preview-inner {
+  padding: 0 var(--s-4) var(--s-4);
+}
+.preview-avatar {
+  margin-top: -30px;
+}
+.flavor-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
