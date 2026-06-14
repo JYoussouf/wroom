@@ -16,6 +16,7 @@ export function TabBar({ active, onHome, onRoom, onCompose, onSwitch }: Props) {
         className={`tab ${active === "home" ? "on" : ""}`}
         onClick={onHome}
         aria-label="Home timeline"
+        aria-current={active === "home" ? "page" : undefined}
       >
         <IconHome size={23} />
         <span>Home</span>
@@ -33,6 +34,7 @@ export function TabBar({ active, onHome, onRoom, onCompose, onSwitch }: Props) {
         className={`tab ${active === "room" ? "on" : ""}`}
         onClick={onRoom}
         aria-label="Back to Room"
+        aria-current={active === "room" ? "page" : undefined}
       >
         <IconRoom size={22} />
         <span>Room</span>
