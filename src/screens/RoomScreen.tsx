@@ -129,8 +129,19 @@ export function RoomScreen() {
             </div>
           ) : (
             <>
-              <div className="section-label">
-                The cast {filtered.length !== myCharacters.length && `· ${filtered.length} shown`}
+              <div className="row spread center">
+                <div className="section-label" style={{ marginBottom: 0 }}>
+                  The cast {filtered.length !== myCharacters.length && `· ${filtered.length} shown`}
+                </div>
+                {myCharacters.length >= 2 && (
+                  <button
+                    className="btn btn-ghost"
+                    style={{ alignSelf: "center" }}
+                    onClick={() => push({ name: "graph" })}
+                  >
+                    Relationships →
+                  </button>
+                )}
               </div>
               <div className={`room-grid ${compact ? "compact" : ""}`}>
                 {filtered.map((c) => (

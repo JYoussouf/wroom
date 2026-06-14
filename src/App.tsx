@@ -9,6 +9,8 @@ import { CharacterHome } from "./screens/CharacterHome";
 import { CharacterProfile } from "./screens/CharacterProfile";
 import { PostDetail } from "./screens/PostDetail";
 import { ComposeScreen } from "./screens/ComposeScreen";
+import { ConnectionsScreen } from "./screens/ConnectionsScreen";
+import { GraphScreen } from "./screens/GraphScreen";
 import { TabBar } from "./components/TabBar";
 import { Toast } from "./components/Toast";
 import { CharacterSwitcher } from "./components/CharacterSwitcher";
@@ -86,6 +88,12 @@ function Shell() {
       break;
     case "compose":
       screen = <ComposeScreen replyTo={route.replyTo} />;
+      break;
+    case "connections":
+      screen = <ConnectionsScreen id={route.id} tab={route.tab} />;
+      break;
+    case "graph":
+      screen = <GraphScreen />;
       break;
     default:
       screen = <NotReady label={route.name} />;
