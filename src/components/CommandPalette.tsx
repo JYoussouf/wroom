@@ -31,10 +31,10 @@ export function CommandPalette({
     const list: Cmd[] = [
       {
         id: "room",
-        label: "Go to the Room",
+        label: "Go to the Wroom",
         sub: "Backstage — your whole cast",
         icon: <IconRoom size={20} />,
-        keywords: "room backstage home cast",
+        keywords: "wroom room backstage home cast",
         run: () => {
           stepOut();
           reset({ name: "room" });

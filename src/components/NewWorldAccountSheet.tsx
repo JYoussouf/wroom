@@ -97,7 +97,7 @@ export function NewWorldAccountSheet({
         />
         {taken && (
           <span className="hint" style={{ color: "var(--danger)" }}>
-            That handle is already used in your room.
+            That handle is already used in your wroom.
           </span>
         )}
       </div>

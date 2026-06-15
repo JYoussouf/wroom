@@ -1,0 +1,22 @@
+{
+  "name": "wroom-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Writer's Room API — Cloudflare Worker + D1 (users, posts, sync).",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "migrate:local": "wrangler d1 migrations apply wroom --local",
+    "migrate:remote": "wrangler d1 migrations apply wroom --remote",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "typescript": "^5.6.3",
+    "wrangler": "^4.100.0"
+  }
+}

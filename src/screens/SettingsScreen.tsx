@@ -14,6 +14,26 @@ type Confirm =
   | { kind: "deleteAccount" }
   | { kind: "reseed" };
 
+function SyncBadge({ status }: { status: import("../store/store").SyncStatus }) {
+  if (status === "idle") return <span style={{ width: 40 }} />;
+  const map: Record<string, { label: string; color: string }> = {
+    syncing: { label: "Syncing…", color: "var(--muted, #888)" },
+    saved: { label: "✓ Saved", color: "var(--muted, #888)" },
+    error: { label: "Sync error", color: "var(--danger, #c00)" },
+    offline: { label: "Offline", color: "var(--danger, #c00)" },
+  };
+  const { label, color } = map[status] ?? map.saved;
+  return (
+    <span
+      aria-live="polite"
+      title="Your wroom syncs to your cloud account"
+      style={{ fontSize: "var(--step--1)", color, whiteSpace: "nowrap", paddingLeft: "var(--s-2)" }}
+    >
+      {label}
+    </span>
+  );
+}
+
 function Choice<T extends string>({
   value,
   options,
@@ -39,6 +59,9 @@ export function SettingsScreen() {
     currentAuthor,
     myCharacters,
     updateAuthor,
+    changePassword,
+    changeEmail,
+    syncStatus,
     updateSettings,
     storageOK,
     exportRoom,
@@ -53,10 +76,50 @@ export function SettingsScreen() {
   const { back, reset } = useNav();
   const importRef = useRef<HTMLInputElement>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
-  const [pw, setPw] = useState("");
+  // Account & security forms (cloud accounts only).
+  const [emailDraft, setEmailDraft] = useState(currentAuthor?.email ?? "");
+  const [emailPw, setEmailPw] = useState("");
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [busyEmail, setBusyEmail] = useState(false);
+  const [busyPw, setBusyPw] = useState(false);
 
   if (!currentAuthor) return null;
   const s = currentAuthor.settings;
+  const emailChanged = emailDraft.trim().toLowerCase() !== currentAuthor.email;
+
+  async function doChangeEmail() {
+    if (busyEmail) return;
+    setBusyEmail(true);
+    try {
+      const res = await changeEmail(emailPw, emailDraft);
+      if (res.ok) {
+        setEmailPw("");
+        showToast("Email updated");
+      } else {
+        showToast(res.error);
+      }
+    } finally {
+      setBusyEmail(false);
+    }
+  }
+
+  async function doChangePassword() {
+    if (busyPw) return;
+    setBusyPw(true);
+    try {
+      const res = await changePassword(curPw, newPw);
+      if (res.ok) {
+        setCurPw("");
+        setNewPw("");
+        showToast("Password updated");
+      } else {
+        showToast(res.error);
+      }
+    } finally {
+      setBusyPw(false);
+    }
+  }
 
   async function pickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -80,7 +143,7 @@ export function SettingsScreen() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    showToast("Room exported ✦");
+    showToast("Wroom exported ✦");
   }
 
   async function doImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -88,7 +151,7 @@ export function SettingsScreen() {
     if (!file) return;
     const text = await file.text();
     const res = importRoom(text);
-    showToast(res.ok ? "Room imported ✦" : res.error);
+    showToast(res.ok ? "Wroom imported ✦" : res.error);
     if (res.ok) reset({ name: "room" });
     e.target.value = "";
   }
@@ -103,7 +166,7 @@ export function SettingsScreen() {
           <div className="bar-title" style={{ fontSize: "var(--step-1)" }}>
             Settings
           </div>
-          <span style={{ width: 40 }} />
+          <SyncBadge status={syncStatus} />
         </div>
       </header>
 
@@ -138,31 +201,58 @@ export function SettingsScreen() {
                 id="a-email"
                 className="input"
                 type="email"
-                value={currentAuthor.email}
-                onChange={(e) => updateAuthor({ email: e.target.value })}
+                autoComplete="email"
+                value={emailDraft}
+                onChange={(e) => setEmailDraft(e.target.value)}
               />
             </div>
+            {emailChanged && (
+              <div className="field">
+                <label htmlFor="a-email-pw">Confirm your password to change email</label>
+                <div className="row gap-2">
+                  <input
+                    id="a-email-pw"
+                    className="input"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Current password"
+                    value={emailPw}
+                    onChange={(e) => setEmailPw(e.target.value)}
+                  />
+                  <button className="btn" disabled={busyEmail || !emailPw} onClick={doChangeEmail}>
+                    {busyEmail ? "Saving…" : "Update"}
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="field">
-              <label htmlFor="a-pw">Change password</label>
+              <label htmlFor="a-new-pw">Change password</label>
+              <input
+                id="a-cur-pw"
+                className="input"
+                type="password"
+                autoComplete="current-password"
+                placeholder="Current password"
+                value={curPw}
+                onChange={(e) => setCurPw(e.target.value)}
+                style={{ marginBottom: "var(--s-2)" }}
+              />
               <div className="row gap-2">
                 <input
-                  id="a-pw"
+                  id="a-new-pw"
                   className="input"
                   type="password"
-                  value={pw}
-                  placeholder="New password"
-                  onChange={(e) => setPw(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder="New password (min 8)"
+                  value={newPw}
+                  onChange={(e) => setNewPw(e.target.value)}
                 />
                 <button
                   className="btn"
-                  disabled={pw.length < 4}
-                  onClick={() => {
-                    updateAuthor({ password: pw });
-                    setPw("");
-                    showToast("Password updated");
-                  }}
+                  disabled={busyPw || newPw.length < 8 || !curPw}
+                  onClick={doChangePassword}
                 >
-                  Update
+                  {busyPw ? "Saving…" : "Update"}
                 </button>
               </div>
             </div>
@@ -268,7 +358,7 @@ export function SettingsScreen() {
             </label>
             {!storageOK && (
               <p className="dim" style={{ fontSize: "var(--step--1)" }}>
-                Browser storage is unavailable here, so your room lives only in
+                Browser storage is unavailable here, so your wroom lives only in
                 this session — use Export below to keep your work.
               </p>
             )}
@@ -278,10 +368,10 @@ export function SettingsScreen() {
           <section className="settings-group">
             <h2 className="serif group-title">Data</h2>
             <button className="btn btn-block" onClick={doExport}>
-              <IconExport size={18} /> Export room as JSON
+              <IconExport size={18} /> Export wroom as JSON
             </button>
             <button className="btn btn-block" onClick={() => importRef.current?.click()}>
-              <IconImport size={18} /> Import a room
+              <IconImport size={18} /> Import a wroom
             </button>
             <input
               ref={importRef}
@@ -291,7 +381,7 @@ export function SettingsScreen() {
               style={{ display: "none" }}
             />
             <button className="btn btn-block" onClick={() => setConfirm({ kind: "reseed" })}>
-              Reload the demo room
+              Reload the demo wroom
             </button>
 
             {myCharacters.length > 0 && (
@@ -336,8 +426,8 @@ export function SettingsScreen() {
             <p className="serif muted">
               <IconSpark size={14} /> Writer's Room is a tool for authoring fiction.
               Every character is invented and every post is make-believe — a
-              writer's craft, never a real or affiliated account. Your room is
-              private to you.
+              writer's craft, never a real or affiliated account. Your wroom is
+              private to your account and synced securely across your devices.
             </p>
             <button className="btn btn-block" style={{ marginTop: "var(--s-3)" }} onClick={logOut}>
               Log out
@@ -351,7 +441,7 @@ export function SettingsScreen() {
         title="Delete character?"
         body={
           confirm?.kind === "deleteChar"
-            ? `${confirm.name} and all of their posts will be permanently removed from your room.`
+            ? `${confirm.name} and all of their posts will be permanently removed from your wroom.`
             : ""
         }
         confirmLabel="Delete"
@@ -367,8 +457,8 @@ export function SettingsScreen() {
       />
       <ConfirmDialog
         open={confirm?.kind === "reseed"}
-        title="Reload the demo room?"
-        body="This replaces your current room with the example 'Lamplight' room. Export first if you want to keep your work."
+        title="Reload the demo wroom?"
+        body="This replaces your current wroom with the example 'Lamplight' wroom. Export first if you want to keep your work."
         confirmLabel="Reload demo"
         danger
         onCancel={() => setConfirm(null)}
@@ -376,13 +466,13 @@ export function SettingsScreen() {
           reseedDemo();
           setConfirm(null);
           reset({ name: "room" });
-          showToast("Demo room loaded");
+          showToast("Demo wroom loaded");
         }}
       />
       <ConfirmDialog
         open={confirm?.kind === "reset"}
         title="Clear everything?"
-        body="Every character, post, and follow in your room will be permanently deleted. This cannot be undone."
+        body="Every character, post, and follow in your wroom will be permanently deleted. This cannot be undone."
         confirmLabel="Clear everything"
         danger
         onCancel={() => setConfirm(null)}
@@ -390,13 +480,13 @@ export function SettingsScreen() {
           resetEverything();
           setConfirm(null);
           reset({ name: "room" });
-          showToast("Your room is empty");
+          showToast("Your wroom is empty");
         }}
       />
       <ConfirmDialog
         open={confirm?.kind === "deleteAccount"}
         title="Delete your account?"
-        body="Your account and your entire room will be permanently deleted from this device. This cannot be undone."
+        body="Your account and your entire wroom will be permanently deleted. This cannot be undone."
         confirmLabel="Delete account"
         danger
         onCancel={() => setConfirm(null)}

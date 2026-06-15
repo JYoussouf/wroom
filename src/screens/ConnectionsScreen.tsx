@@ -107,7 +107,7 @@ export function ConnectionsScreen({
               </div>
               {discover.length === 0 ? (
                 <p className="dim serif" style={{ padding: "var(--s-3) 0" }}>
-                  {name} already follows everyone in your room. Sketch a world
+                  {name} already follows everyone in your wroom. Sketch a world
                   account to widen their world.
                 </p>
               ) : (

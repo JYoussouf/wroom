@@ -33,11 +33,11 @@ export function TabBar({ active, onHome, onRoom, onCompose, onSwitch }: Props) {
       <button
         className={`tab ${active === "room" ? "on" : ""}`}
         onClick={onRoom}
-        aria-label="Back to Room"
+        aria-label="Back to Wroom"
         aria-current={active === "room" ? "page" : undefined}
       >
         <IconRoom size={22} />
-        <span>Room</span>
+        <span>Wroom</span>
       </button>
     </nav>
   );

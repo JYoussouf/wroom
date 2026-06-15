@@ -58,7 +58,7 @@ export function RoomScreen() {
             />
             <div>
               <div className="bar-title" style={{ fontSize: "var(--step-1)" }}>
-                Your Room
+                Your Wroom
               </div>
               <div className="dim" style={{ fontSize: "0.72rem" }}>
                 {currentAuthor?.name}
@@ -115,7 +115,7 @@ export function RoomScreen() {
           {myCharacters.length === 0 ? (
             <div className="empty" style={{ marginTop: "var(--s-5)" }}>
               <div className="glyph">✦</div>
-              <h3 className="serif">Your room is dark and waiting</h3>
+              <h3 className="serif">Your wroom is dark and waiting</h3>
               <p className="serif">
                 Every story starts with a single voice. Invent your first
                 character and step into their world.

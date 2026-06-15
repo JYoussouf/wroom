@@ -70,7 +70,7 @@ export function CharacterSwitcher({
             onClose();
           }}
         >
-          <IconRoom size={18} /> Back to Room
+          <IconRoom size={18} /> Back to Wroom
         </button>
       </div>
     </Sheet>

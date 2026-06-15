@@ -1,30 +1,35 @@
 import { useState } from "react";
 import { useStore } from "../store/store";
-import { DEMO_EMAIL, DEMO_PASSWORD } from "../store/seed";
 import { IconSpark } from "../components/icons";
 
 type Mode = "in" | "up";
 
 export function AuthScreen() {
-  const { logIn, signUp } = useStore();
+  const { logIn, signUp, enterDemo } = useStore();
   const [mode, setMode] = useState<Mode>("in");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setError(null);
-    const res =
-      mode === "up" ? signUp(name, email, password) : logIn(email, password);
-    if (!res.ok) setError(res.error);
+    setBusy(true);
+    try {
+      const res =
+        mode === "up" ? await signUp(name, email, password) : await logIn(email, password);
+      if (!res.ok) setError(res.error);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function demo() {
     setError(null);
-    const res = logIn(DEMO_EMAIL, DEMO_PASSWORD);
-    if (!res.ok) setError(res.error);
+    enterDemo();
   }
 
   return (
@@ -54,7 +59,7 @@ export function AuthScreen() {
             className="muted serif"
             style={{ fontSize: "var(--step-1)", marginTop: "var(--s-2)", maxWidth: "34ch" }}
           >
-            Run a room of invented characters. Step into one at a time. Write each
+            Run a wroom of invented characters. Step into one at a time. Write each
             persona as if you were becoming someone.
           </p>
 
@@ -101,7 +106,7 @@ export function AuthScreen() {
                   autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="The author behind the room"
+                  placeholder="The author behind the wroom"
                 />
               </div>
             )}
@@ -141,17 +146,28 @@ export function AuthScreen() {
               </p>
             )}
 
-            <button type="submit" className="btn btn-primary btn-lg btn-block">
-              {mode === "up" ? "Create your room" : "Enter your room"}
+            <button
+              type="submit"
+              className="btn btn-primary btn-lg btn-block"
+              disabled={busy}
+            >
+              {busy
+                ? mode === "up"
+                  ? "Creating…"
+                  : "Signing in…"
+                : mode === "up"
+                  ? "Create your wroom"
+                  : "Enter your wroom"}
             </button>
 
             <button
               type="button"
               className="btn btn-ghost btn-block"
               onClick={demo}
+              disabled={busy}
               style={{ marginTop: "calc(-1 * var(--s-2))" }}
             >
-              Explore the demo room →
+              Explore the demo wroom →
             </button>
           </form>
 
@@ -159,9 +175,9 @@ export function AuthScreen() {
             className="dim"
             style={{ fontSize: "var(--step--1)", marginTop: "var(--s-5)", textAlign: "center", lineHeight: 1.6 }}
           >
-            Everything you write stays private to you on this device. Writer's Room
-            is for authoring fiction — every character is invented and every post
-            is make-believe.
+            Your wroom is private to your account and synced securely so you can
+            pick it up on any device. Writer's Room is for authoring fiction —
+            every character is invented and every post is make-believe.
           </p>
         </div>
       </div>

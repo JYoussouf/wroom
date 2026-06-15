@@ -241,10 +241,10 @@ export function CharacterEditor({ editId }: { editId?: string }) {
             </div>
             {handleTaken ? (
               <span className="hint" style={{ color: "var(--danger)" }}>
-                Another account in your room already uses @{normalized}.
+                Another account in your wroom already uses @{normalized}.
               </span>
             ) : (
-              <span className="hint">Unique within your room. Letters, numbers, . and _</span>
+              <span className="hint">Unique within your wroom. Letters, numbers, . and _</span>
             )}
           </div>
 

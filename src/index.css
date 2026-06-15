@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* =========================================================================
    Writer's Room — design system
    Quiet, editorial, confident. A literary magazine meets a modern social app.

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useStore } from "./store/store";
+import { Landing } from "./landing/Landing";
 import { useThemeController } from "./lib/theme";
 import { NavProvider, useNav } from "./nav";
 import { AuthScreen } from "./screens/AuthScreen";
@@ -26,7 +27,7 @@ function NotReady({ label }: { label: string }) {
         <div className="empty">
           <div className="glyph">✦</div>
           <h3 className="serif">{label}</h3>
-          <p className="serif">This part of the room is being built.</p>
+          <p className="serif">This part of the wroom is being built.</p>
           <button className="btn" onClick={back}>
             Go back
           </button>
@@ -135,8 +136,12 @@ export default function App() {
   const { currentAuthor, activeCharacter } = useStore();
   const themePref = currentAuthor?.settings.theme ?? "system";
   useThemeController(themePref, activeCharacter?.accentColor ?? null);
+  const [showAuth, setShowAuth] = useState(false);
 
-  if (!currentAuthor) return <AuthScreen />;
+  // Logged out: show the marketing landing first; "Get Started" opens sign-up.
+  if (!currentAuthor) {
+    return showAuth ? <AuthScreen /> : <Landing onGetStarted={() => setShowAuth(true)} />;
+  }
 
   return (
     <NavProvider>

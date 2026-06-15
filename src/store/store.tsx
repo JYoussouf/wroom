@@ -18,6 +18,7 @@ import type {
 } from "../types";
 import { uid } from "../lib/id";
 import { randomAccent, accentFromSeed } from "../lib/color";
+import { api, ApiError, type RoomPayload } from "../lib/api";
 import {
   DB_VERSION,
   emptyDB,
@@ -27,7 +28,76 @@ import {
   saveDB,
   STORAGE_OK,
 } from "./db";
-import { buildSeedDB } from "./seed";
+import { buildSeedDB, DEMO_EMAIL } from "./seed";
+
+export type SyncStatus = "idle" | "syncing" | "saved" | "error" | "offline";
+
+function defaultSettings(): AuthorSettings {
+  return {
+    theme: "system",
+    cardDensity: "comfortable",
+    defaultPostLimit: 280,
+    defaultPrivacy: "private",
+    composerFont: "serif",
+    autosave: true,
+    keepEverythingPrivate: true,
+  };
+}
+
+/** Map an API author (no password; loose settings) to the client Author shape. */
+function toClientAuthor(a: {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  createdAt: number;
+  settings: unknown;
+}): Author {
+  const s = (a.settings && typeof a.settings === "object" ? a.settings : {}) as Partial<AuthorSettings>;
+  return {
+    id: a.id,
+    name: a.name,
+    email: a.email,
+    avatar: a.avatar,
+    password: "", // server is the source of truth; never hold credentials locally
+    createdAt: a.createdAt,
+    settings: { ...defaultSettings(), ...s },
+  };
+}
+
+/** Build a WroomDB from a server pull, normalizing the author + post arrays. */
+function roomFromServer(room: WroomDB, fallbackAuthor: Author): WroomDB {
+  const serverAuthor = room.authors?.[0];
+  const author = serverAuthor ? toClientAuthor(serverAuthor) : fallbackAuthor;
+  return {
+    version: DB_VERSION,
+    authors: [author],
+    characters: room.characters ?? [],
+    worldAccounts: room.worldAccounts ?? [],
+    follows: room.follows ?? [],
+    posts: (room.posts ?? []).map((p) => ({
+      ...p,
+      likedBy: p.likedBy ?? [],
+      repostedBy: p.repostedBy ?? [],
+    })),
+    drafts: room.drafts ?? {},
+    session: { authorId: author.id },
+  };
+}
+
+/** One author's slice of the DB, as sent to POST /api/sync (no credentials). */
+function scopedRoom(d: WroomDB, authorId: string): RoomPayload {
+  const a = d.authors.find((x) => x.id === authorId);
+  const characters = d.characters.filter((c) => c.authorId === authorId);
+  const charIds = new Set(characters.map((c) => c.id));
+  const worldAccounts = d.worldAccounts.filter((w) => w.authorId === authorId);
+  const follows = d.follows.filter((f) => charIds.has(f.followerId));
+  const posts = d.posts.filter((p) => charIds.has(p.characterId));
+  const authors = a
+    ? [{ id: a.id, name: a.name, email: a.email, avatar: a.avatar, settings: a.settings, createdAt: a.createdAt }]
+    : [];
+  return { authors, characters, worldAccounts, follows, posts, drafts: d.drafts };
+}
 
 export interface NewCharacterInput {
   displayName: string;
@@ -54,10 +124,15 @@ interface StoreValue {
 
   // ---- session / author ----
   currentAuthor: Author | null;
-  signUp: (name: string, email: string, password: string) => Result;
-  logIn: (email: string, password: string) => Result;
+  signUp: (name: string, email: string, password: string) => Promise<Result>;
+  logIn: (email: string, password: string) => Promise<Result>;
+  enterDemo: () => void;
   logOut: () => void;
+  /** Background sync state for the cloud account (offline/demo stays "idle"). */
+  syncStatus: SyncStatus;
   updateAuthor: (patch: Partial<Omit<Author, "id" | "settings">>) => void;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<Result>;
+  changeEmail: (password: string, newEmail: string) => Promise<Result>;
   updateSettings: (patch: Partial<AuthorSettings>) => void;
 
   // ---- active (stepped-in) character ----
@@ -131,17 +206,70 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [activeCharacterId, setActiveCharacterId] = useState<string | null>(null);
   const [flashPostId, setFlashPostId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const saveTimer = useRef<number | null>(null);
   const flashTimer = useRef<number | null>(null);
   const toastTimer = useRef<number | null>(null);
+  // "server" = cloud account (syncs); "local" = demo room (offline only).
+  const sessionModeRef = useRef<"server" | "local" | null>(null);
+  // Set when we've just hydrated from the server, so we don't immediately echo
+  // the pulled room back with a push.
+  const skipNextPushRef = useRef(false);
 
-  // Debounced persistence on every change.
+  // Debounced persistence to localStorage (offline cache) on every change.
   useEffect(() => {
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => saveDB(db), 180);
     return () => {
       if (saveTimer.current) window.clearTimeout(saveTimer.current);
     };
+  }, [db]);
+
+  // On boot, confirm the session with the server and hydrate the room. If the
+  // request fails (offline) or there's no session (401), we keep the local
+  // cache and stay in whatever state loadDB() produced.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const sa = await api.me();
+        if (cancelled || !sa) return;
+        const room = await api.pull();
+        if (cancelled) return;
+        sessionModeRef.current = "server";
+        skipNextPushRef.current = true;
+        setActiveCharacterId(null);
+        setDb(roomFromServer(room, toClientAuthor(sa)));
+        setSyncStatus("saved");
+      } catch {
+        // Offline or unexpected error — keep the local cache untouched.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Debounced push of the current author's room to the server (cloud accounts
+  // only). The localStorage cache above still holds everything for offline use.
+  useEffect(() => {
+    if (sessionModeRef.current !== "server") return;
+    const authorId = db.session.authorId;
+    if (!authorId) return;
+    if (skipNextPushRef.current) {
+      skipNextPushRef.current = false;
+      return;
+    }
+    setSyncStatus("syncing");
+    const timer = window.setTimeout(() => {
+      api
+        .push(scopedRoom(db, authorId))
+        .then(() => setSyncStatus("saved"))
+        .catch((err) =>
+          setSyncStatus(err instanceof ApiError && err.status === 0 ? "offline" : "error")
+        );
+    }, 700);
+    return () => window.clearTimeout(timer);
   }, [db]);
 
   const currentAuthor = useMemo(
@@ -172,62 +300,113 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ---- session / author ----
   const signUp = useCallback(
-    (name: string, email: string, password: string): Result => {
+    async (name: string, email: string, password: string): Promise<Result> => {
       const e = email.trim().toLowerCase();
       if (!name.trim()) return { ok: false, error: "Tell us your name." };
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
         return { ok: false, error: "That email doesn't look right." };
-      if (password.length < 4)
-        return { ok: false, error: "Use at least 4 characters for your password." };
-      if (db.authors.some((a) => a.email.toLowerCase() === e))
-        return { ok: false, error: "An account with that email already exists." };
-      const author: Author = {
-        id: uid("author"),
-        name: name.trim(),
-        email: e,
-        password: obfuscate(password),
-        settings: {
-          theme: "system",
-          cardDensity: "comfortable",
-          defaultPostLimit: 280,
-          defaultPrivacy: "private",
-          composerFont: "serif",
-          autosave: true,
-          keepEverythingPrivate: true,
-        },
-        createdAt: Date.now(),
-      };
-      setDb((d) => ({
-        ...d,
-        authors: [...d.authors, author],
-        session: { authorId: author.id },
-      }));
-      setActiveCharacterId(null);
-      return { ok: true };
+      if (password.length < 8)
+        return { ok: false, error: "Use at least 8 characters for your password." };
+      try {
+        const author = toClientAuthor(await api.signup(name.trim(), e, password));
+        sessionModeRef.current = "server";
+        skipNextPushRef.current = false; // push once to persist default settings
+        setActiveCharacterId(null);
+        setDb({
+          version: DB_VERSION,
+          authors: [author],
+          characters: [],
+          worldAccounts: [],
+          follows: [],
+          posts: [],
+          drafts: {},
+          session: { authorId: author.id },
+        });
+        return { ok: true };
+      } catch (err) {
+        return {
+          ok: false,
+          error: err instanceof Error ? err.message : "Could not create your account.",
+        };
+      }
     },
-    [db.authors]
+    []
   );
 
   const logIn = useCallback(
-    (email: string, password: string): Result => {
+    async (email: string, password: string): Promise<Result> => {
       const e = email.trim().toLowerCase();
-      const author = db.authors.find((a) => a.email.toLowerCase() === e);
-      if (!author) return { ok: false, error: "No account with that email." };
-      // Accept both obfuscated and plain (seed author stores plain).
-      const matches =
-        author.password === obfuscate(password) || author.password === password;
-      if (!matches) return { ok: false, error: "Wrong password." };
-      setDb((d) => ({ ...d, session: { authorId: author.id } }));
-      setActiveCharacterId(null);
-      return { ok: true };
+      try {
+        const author = toClientAuthor(await api.login(e, password));
+        const room = await api.pull();
+        sessionModeRef.current = "server";
+        skipNextPushRef.current = true; // we just hydrated; don't echo it back
+        setActiveCharacterId(null);
+        setDb(roomFromServer(room, author));
+        setSyncStatus("saved");
+        return { ok: true };
+      } catch (err) {
+        return {
+          ok: false,
+          error: err instanceof Error ? err.message : "Could not sign in.",
+        };
+      }
     },
-    [db.authors]
+    []
   );
 
-  const logOut = useCallback(() => {
+  /** Load the local demo room without a cloud account (offline, never synced). */
+  const enterDemo = useCallback(() => {
+    sessionModeRef.current = "local";
+    setSyncStatus("idle");
+    const seed = buildSeedDB();
+    const demo = seed.authors.find((a) => a.email.toLowerCase() === DEMO_EMAIL.toLowerCase());
     setActiveCharacterId(null);
-    setDb((d) => ({ ...d, session: { authorId: null } }));
+    setDb({ ...seed, session: { authorId: demo?.id ?? null } });
   }, []);
+
+  const logOut = useCallback(() => {
+    const wasServer = sessionModeRef.current === "server";
+    sessionModeRef.current = null;
+    setSyncStatus("idle");
+    setActiveCharacterId(null);
+    setDb(emptyDB());
+    if (wasServer) api.logout().catch(() => {});
+  }, []);
+
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string): Promise<Result> => {
+      if (sessionModeRef.current !== "server")
+        return { ok: false, error: "Sign in to a cloud account to change your password." };
+      try {
+        await api.changePassword(currentPassword, newPassword);
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "Could not update password." };
+      }
+    },
+    []
+  );
+
+  const changeEmail = useCallback(
+    async (password: string, newEmail: string): Promise<Result> => {
+      if (sessionModeRef.current !== "server")
+        return { ok: false, error: "Sign in to a cloud account to change your email." };
+      try {
+        const sa = await api.changeEmail(password, newEmail);
+        setDb((d) => ({
+          ...d,
+          authors: d.authors.map((a) =>
+            a.id === d.session.authorId ? { ...a, email: sa.email } : a
+          ),
+        }));
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "Could not update email." };
+      }
+    },
+    []
+  );
 
   const updateAuthor = useCallback(
     (patch: Partial<Omit<Author, "id" | "settings">>) => {
@@ -540,6 +719,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(() => {
+    if (sessionModeRef.current === "server") api.deleteAccount().catch(() => {});
+    sessionModeRef.current = null;
+    setSyncStatus("idle");
     setActiveCharacterId(null);
     setDb((d) => {
       const authorId = d.session.authorId;
@@ -583,8 +765,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     currentAuthor,
     signUp,
     logIn,
+    enterDemo,
     logOut,
+    syncStatus,
     updateAuthor,
+    changePassword,
+    changeEmail,
     updateSettings,
     activeCharacterId,
     activeCharacter,

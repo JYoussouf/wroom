@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "io.wroom.app",
-  appName: "Writer's Room",
+  appName: "Wroom",
   webDir: "dist",
   ios: {
     contentInset: "always",

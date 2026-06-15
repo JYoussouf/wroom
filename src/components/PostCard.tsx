@@ -88,7 +88,7 @@ export function PostCard({ post, threadLineTop, threadLineBottom, emphasis }: Pr
             disabled={!activeCharacterId}
             onClick={() => activeCharacterId && toggleRepost(post.id, activeCharacterId)}
             aria-pressed={reposted}
-            aria-label="Repost within room"
+            aria-label="Repost within wroom"
           >
             <IconRepost size={18} />
             {post.repostedBy.length > 0 && (

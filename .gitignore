@@ -1,6 +1,11 @@
 # dependencies
 node_modules/
 
+# server (Cloudflare Worker) — local secrets & build state
+server/node_modules/
+server/.dev.vars
+server/.wrangler/
+
 # build output
 dist/
 dist-ssr/
