@@ -1,0 +1,8 @@
+{
+  "name": "@wroom/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Platform-agnostic Writer's Room core, shared by the web and native apps.",
+  "main": "index.ts",
+  "types": "index.ts"
+}
