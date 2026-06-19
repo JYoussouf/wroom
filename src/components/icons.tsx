@@ -124,6 +124,26 @@ export const IconTrash = ({ size = 18, className }: P) => (
     <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
   </svg>
 );
+export const IconUser = ({ size = 24, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" />
+  </svg>
+);
+export const IconGraph = ({ size = 24, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="6" cy="6" r="2.4" />
+    <circle cx="18" cy="7" r="2.4" />
+    <circle cx="12" cy="18" r="2.4" />
+    <path d="M7.6 7.6l3 8M16.6 8.6l-3.4 7.6M8 6.6h7.6" />
+  </svg>
+);
+export const IconCompass = ({ size = 24, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor" stroke="none" />
+  </svg>
+);
 export const IconSpark = ({ size = 16, className }: P) => (
   <svg {...base(size)} className={className}>
     <path d="M12 3v4M12 17v4M3 12h4M17 12h4" />

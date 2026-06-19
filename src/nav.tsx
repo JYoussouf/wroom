@@ -9,6 +9,7 @@ import {
 
 /** Every screen the app can be on. A mobile-style navigation stack. */
 export type Route =
+  | { name: "feed" } // the 3-column home feed (For you / Following)
   | { name: "room" }
   | { name: "character-new" }
   | { name: "character-edit"; id: string }
@@ -34,7 +35,7 @@ interface NavValue {
 const Ctx = createContext<NavValue | null>(null);
 
 export function NavProvider({ children }: { children: ReactNode }) {
-  const [stack, setStack] = useState<Route[]>([{ name: "room" }]);
+  const [stack, setStack] = useState<Route[]>([{ name: "feed" }]);
 
   const push = useCallback((route: Route) => {
     setStack((s) => [...s, route]);

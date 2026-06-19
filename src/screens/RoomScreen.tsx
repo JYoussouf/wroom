@@ -210,7 +210,7 @@ export function RoomScreen() {
               marginTop: "var(--s-6)",
             }}
           >
-            <IconSpark size={12} /> Everything here is invented fiction, private to you.
+            <IconSpark size={12} /> Everything here is invented fiction.
           </p>
         </div>
       </div>

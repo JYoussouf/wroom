@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useStore } from "./store/store";
 import { Landing } from "./landing/Landing";
 import { useThemeController } from "./lib/theme";
+import { useAppIconController } from "./lib/appIcon";
 import { NavProvider, useNav } from "./nav";
 import { AuthScreen } from "./screens/AuthScreen";
+import { FeedScreen } from "./screens/FeedScreen";
 import { RoomScreen } from "./screens/RoomScreen";
 import { CharacterEditor } from "./screens/CharacterEditor";
 import { CharacterHome } from "./screens/CharacterHome";
@@ -14,10 +16,13 @@ import { ConnectionsScreen } from "./screens/ConnectionsScreen";
 import { GraphScreen } from "./screens/GraphScreen";
 import { ShareScreen } from "./screens/ShareScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
+import { LeftRail } from "./components/LeftRail";
+import { RightSidebar } from "./components/RightSidebar";
 import { TabBar } from "./components/TabBar";
 import { Toast } from "./components/Toast";
 import { CharacterSwitcher } from "./components/CharacterSwitcher";
 import { CommandPalette } from "./components/CommandPalette";
+import { FeatureRequestBadge } from "./components/FeatureRequestBadge";
 
 function NotReady({ label }: { label: string }) {
   const { back } = useNav();
@@ -38,9 +43,8 @@ function NotReady({ label }: { label: string }) {
 }
 
 function Shell() {
-  const { activeCharacterId, activeCharacter, stepInto, stepOut, myCharacters } =
-    useStore();
   const { route, reset, push } = useNav();
+  const { activeCharacter } = useStore();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -56,21 +60,20 @@ function Shell() {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  function goHome() {
-    if (activeCharacterId) {
-      reset({ name: "home" });
-    } else if (myCharacters[0]) {
-      stepInto(myCharacters[0].id);
-      reset({ name: "home" });
-    }
-  }
-  function goRoom() {
-    stepOut();
-    reset({ name: "room" });
-  }
+  const openSwitcher = () => setSwitcherOpen(true);
+
+  // Mobile bottom-nav actions. Compose always writes in a voice, so step into a
+  // character first if none is active.
+  const tabCompose = () =>
+    activeCharacter ? push({ name: "compose" }) : setSwitcherOpen(true);
+  const tabActive: "home" | "room" | null =
+    route.name === "feed" ? "home" : route.name === "room" ? "room" : null;
 
   let screen: React.ReactNode;
   switch (route.name) {
+    case "feed":
+      screen = <FeedScreen onOpenSwitcher={openSwitcher} />;
+      break;
     case "room":
       screen = <RoomScreen />;
       break;
@@ -81,7 +84,7 @@ function Shell() {
       screen = <CharacterEditor editId={route.id} />;
       break;
     case "home":
-      screen = <CharacterHome onOpenSwitcher={() => setSwitcherOpen(true)} />;
+      screen = <CharacterHome onOpenSwitcher={openSwitcher} />;
       break;
     case "profile":
       screen = <CharacterProfile id={route.id} />;
@@ -108,34 +111,31 @@ function Shell() {
       screen = <NotReady label="Not found" />;
   }
 
-  // The tab bar belongs to the onstage (stepped-in) experience.
-  const onstageRoutes = ["home", "profile", "post", "connections", "graph"];
-  const showTabBar =
-    !!activeCharacter && onstageRoutes.includes(route.name);
-
   return (
-    <>
-      {screen}
-      {showTabBar && (
-        <TabBar
-          active={route.name === "home" ? "home" : null}
-          onHome={goHome}
-          onRoom={goRoom}
-          onCompose={() => push({ name: "compose" })}
-          onSwitch={() => setSwitcherOpen(true)}
-        />
-      )}
+    <div className="workspace">
+      <LeftRail onOpenSwitcher={openSwitcher} />
+      <main className="ws-center">{screen}</main>
+      <RightSidebar onOpenSwitcher={openSwitcher} />
+      <TabBar
+        active={tabActive}
+        onHome={() => reset({ name: "feed" })}
+        onRoom={() => reset({ name: "room" })}
+        onCompose={tabCompose}
+        onSwitch={openSwitcher}
+      />
       <CharacterSwitcher open={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <FeatureRequestBadge />
       <Toast />
-    </>
+    </div>
   );
 }
 
 export default function App() {
   const { currentAuthor, activeCharacter } = useStore();
-  const themePref = currentAuthor?.settings.theme ?? "system";
+  const themePref = currentAuthor?.settings.theme ?? "dark";
   useThemeController(themePref, activeCharacter?.accentColor ?? null);
+  useAppIconController(currentAuthor?.settings.appIcon ?? "cream");
   const [showAuth, setShowAuth] = useState(false);
 
   // Logged out: show the marketing landing first; "Get Started" opens sign-up.

@@ -259,10 +259,6 @@ export function ComposeScreen({ replyTo }: { replyTo?: string }) {
             <div className="grow" />
             <CharCountRing count={count} limit={limit} />
           </div>
-
-          <p className="compose-fiction dim">
-            Fiction — every post here is invented craft, private to you.
-          </p>
         </div>
       </div>
     </>
