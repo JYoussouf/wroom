@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import type { Env, Variables } from "./db";
 import { auth } from "./auth";
 import { sync } from "./sync";
+import { feedback } from "./feedback";
 import { requireAuth } from "./middleware";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -23,6 +24,9 @@ app.get("/", (c) => c.json({ name: "wroom-api", ok: true }));
 app.get("/health", (c) => c.json({ ok: true }));
 
 app.route("/api/auth", auth);
+
+// In-app feature-request form — unauthenticated, files a GitHub issue.
+app.route("/api/feedback", feedback);
 
 // Everything under /api/sync requires a valid session.
 app.use("/api/sync/*", requireAuth);

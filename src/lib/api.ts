@@ -36,6 +36,8 @@ export interface RoomPayload {
   worldAccounts: unknown[];
   follows: unknown[];
   posts: unknown[];
+  /** Typed, consented bonds between characters. Optional until the server persists them. */
+  relationships?: unknown[];
   drafts: Record<string, string>;
 }
 
@@ -160,6 +162,17 @@ export const api = {
     return request<WroomDB>("/api/sync", {
       method: "POST",
       body: JSON.stringify(room),
+    });
+  },
+
+  /** File an in-app feature request / bug report as a GitHub issue. */
+  async submitFeedback(input: {
+    text: string;
+    kind: "feature_idea" | "bug";
+  }): Promise<{ ok: true; url: string | null; number: number | null }> {
+    return request("/api/feedback", {
+      method: "POST",
+      body: JSON.stringify(input),
     });
   },
 };

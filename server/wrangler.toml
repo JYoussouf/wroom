@@ -30,3 +30,8 @@ ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:4173,capacitor://local
 # Secrets (NOT set here). Set with:
 #   npx wrangler secret put SESSION_SECRET
 # For local dev, put it in server/.dev.vars (gitignored).
+#
+# In-app feature-request form (POST /api/feedback) files GitHub issues. Set:
+#   npx wrangler secret put GITHUB_TOKEN   # fine-grained PAT with Issues: write
+#   npx wrangler secret put GITHUB_REPO    # e.g. "JYoussouf/wroom"
+# Locally, add GITHUB_TOKEN and GITHUB_REPO to server/.dev.vars.
