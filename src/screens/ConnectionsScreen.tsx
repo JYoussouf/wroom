@@ -77,14 +77,14 @@ export function ConnectionsScreen({
               className={active === "followers" ? "on" : ""}
               onClick={() => setActive("followers")}
             >
-              Followers
+              Readers
             </button>
           </div>
 
           {list.length === 0 ? (
             <p className="muted serif" style={{ textAlign: "center", padding: "var(--s-5)" }}>
               {active === "followers"
-                ? `No one follows ${name} yet.`
+                ? `No one reads ${name} yet.`
                 : `${name} isn't following anyone yet.`}
             </p>
           ) : (

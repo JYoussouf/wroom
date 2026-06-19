@@ -1,4 +1,11 @@
-import type { Account, Character, Post, WorldAccount, WroomDB } from "../types";
+import type {
+  Account,
+  Character,
+  Post,
+  Relationship,
+  WorldAccount,
+  WroomDB,
+} from "../types";
 
 /** Resolve any account id (character or world) to a unified Account. */
 export function resolveAccount(db: WroomDB, id: string): Account | null {
@@ -54,6 +61,19 @@ export function homeTimeline(db: WroomDB, characterId: string): Post[] {
   follows.add(characterId); // include own posts
   return db.posts
     .filter((p) => !p.parentPostId && follows.has(p.characterId))
+    .sort(byNewest);
+}
+
+/**
+ * The "For you" feed for the whole wroom: every top-level post by any of the
+ * author's characters, newest first. A god's-eye view of your fiction world.
+ */
+export function wroomFeed(db: WroomDB, authorId: string): Post[] {
+  const charIds = new Set(
+    db.characters.filter((c) => c.authorId === authorId).map((c) => c.id)
+  );
+  return db.posts
+    .filter((p) => !p.parentPostId && charIds.has(p.characterId))
     .sort(byNewest);
 }
 
@@ -127,6 +147,85 @@ export function recentActivity(
     .filter((p) => charIds.has(p.characterId))
     .sort(byNewest)
     .slice(0, limit);
+}
+
+/* ---- Relationships (typed, consented bonds — distinct from follows) ---- */
+
+/** The owning author of any account id (character or world account). */
+export function ownerAuthorId(db: WroomDB, accountId: string): string | null {
+  const c = db.characters.find((x) => x.id === accountId);
+  if (c) return c.authorId;
+  const w = db.worldAccounts.find((x) => x.id === accountId);
+  return w ? w.authorId : null;
+}
+
+/** The relationship between two accounts, in either direction, if any. */
+export function relationshipBetween(
+  db: WroomDB,
+  a: string,
+  b: string
+): Relationship | null {
+  return (
+    db.relationships.find(
+      (r) => (r.aId === a && r.bId === b) || (r.aId === b && r.bId === a)
+    ) ?? null
+  );
+}
+
+/** All bonds (any status) that involve an account. */
+export function relationshipsInvolving(
+  db: WroomDB,
+  accountId: string
+): Relationship[] {
+  return db.relationships.filter(
+    (r) => r.aId === accountId || r.bId === accountId
+  );
+}
+
+/** Accepted bonds involving an account, newest first. */
+export function acceptedRelationshipsOf(
+  db: WroomDB,
+  accountId: string
+): Relationship[] {
+  return relationshipsInvolving(db, accountId)
+    .filter((r) => r.status === "accepted")
+    .sort((a, b) => (b.acceptedAt ?? b.createdAt) - (a.acceptedAt ?? a.createdAt));
+}
+
+/** In a bond, the account id on the other side from `selfId`. */
+export function otherSide(rel: Relationship, selfId: string): string {
+  return rel.aId === selfId ? rel.bId : rel.aId;
+}
+
+/** Pending requests awaiting this author's confirmation: the bond's recipient
+ *  (the side that did not initiate) is one of the author's characters. */
+export function incomingRelationshipRequests(
+  db: WroomDB,
+  authorId: string
+): Relationship[] {
+  const mine = new Set(
+    db.characters.filter((c) => c.authorId === authorId).map((c) => c.id)
+  );
+  return db.relationships
+    .filter((r) => r.status === "pending" && r.requestedBy !== undefined)
+    .filter((r) => {
+      const recipient = otherSide(r, r.requestedBy);
+      return mine.has(recipient);
+    })
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** Pending requests this author has sent and is still waiting on. */
+export function outgoingRelationshipRequests(
+  db: WroomDB,
+  authorId: string
+): Relationship[] {
+  const mine = new Set(
+    db.characters.filter((c) => c.authorId === authorId).map((c) => c.id)
+  );
+  return db.relationships
+    .filter((r) => r.status === "pending" && mine.has(r.requestedBy))
+    .sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export function getCharacter(db: WroomDB, id: string): Character | null {

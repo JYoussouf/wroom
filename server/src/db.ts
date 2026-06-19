@@ -6,6 +6,9 @@ export interface Env {
   DB: D1Database;
   SESSION_SECRET: string;
   ALLOWED_ORIGINS: string;
+  // Optional: enables the in-app feature-request form to file GitHub issues.
+  GITHUB_TOKEN?: string;
+  GITHUB_REPO?: string;
 }
 
 /** Hono context variables set by requireAuth middleware. */
@@ -49,8 +52,12 @@ interface FollowRow {
 interface PostRow {
   id: string; author_id: string; character_id: string; body: string;
   parent_post_id: string | null; thread_id: string | null; created_at: number;
+  reply_scope: string;
 }
 interface ActorRow { post_id: string; character_id: string }
+interface BlockRow {
+  id: string; blocker_author_id: string; target_type: string; target_id: string; created_at: number;
+}
 
 // ---- Mapping: rows -> WroomDB-shaped JSON ----------------------------------
 
@@ -92,9 +99,22 @@ function rowToFollow(r: FollowRow) {
   return { id: r.id, followerId: r.follower_id, followeeId: r.followee_id, createdAt: r.created_at };
 }
 
-/** Pull the full WroomDB-shaped room for one author. */
+function rowToBlock(r: BlockRow) {
+  return {
+    id: r.id, blockerAuthorId: r.blocker_author_id,
+    targetType: r.target_type, targetId: r.target_id, createdAt: r.created_at,
+  };
+}
+
+/** Pull the WroomDB-shaped room for one author.
+ *
+ *  NOTE: this is still the v1 author-scoped pull (a user sees only their own
+ *  rows). The v2 shared graph needs a separate feed read that spans authors and
+ *  filters by blocks — see the endpoint plan. This function is kept coherent
+ *  with the v2 type shape (authorId / replyScope / replyAllowlist / blocks) so
+ *  the client contract is stable while the feed read is built out. */
 export async function pullRoom(db: D1Database, authorId: string) {
-  const [author, characters, worldAccounts, follows, posts, likes, reposts, draftsRow] =
+  const [author, characters, worldAccounts, follows, posts, likes, reposts, allowRows, blocks, draftsRow] =
     await Promise.all([
       db.prepare("SELECT * FROM authors WHERE id = ?").bind(authorId).first<AuthorRow>(),
       db.prepare("SELECT * FROM characters WHERE author_id = ?").bind(authorId).all<CharacterRow>(),
@@ -103,6 +123,11 @@ export async function pullRoom(db: D1Database, authorId: string) {
       db.prepare("SELECT * FROM posts WHERE author_id = ?").bind(authorId).all<PostRow>(),
       db.prepare("SELECT post_id, character_id FROM post_likes WHERE author_id = ?").bind(authorId).all<ActorRow>(),
       db.prepare("SELECT post_id, character_id FROM post_reposts WHERE author_id = ?").bind(authorId).all<ActorRow>(),
+      db.prepare(
+        `SELECT a.post_id, a.character_id FROM post_reply_allowlist a
+         JOIN posts p ON p.id = a.post_id WHERE p.author_id = ?`,
+      ).bind(authorId).all<ActorRow>(),
+      db.prepare("SELECT * FROM blocks WHERE blocker_author_id = ?").bind(authorId).all<BlockRow>(),
       db.prepare("SELECT data FROM drafts WHERE author_id = ?").bind(authorId).first<{ data: string }>(),
     ]);
 
@@ -110,11 +135,15 @@ export async function pullRoom(db: D1Database, authorId: string) {
   for (const r of likes.results) (likesByPost.get(r.post_id) ?? likesByPost.set(r.post_id, []).get(r.post_id)!).push(r.character_id);
   const repostsByPost = new Map<string, string[]>();
   for (const r of reposts.results) (repostsByPost.get(r.post_id) ?? repostsByPost.set(r.post_id, []).get(r.post_id)!).push(r.character_id);
+  const allowByPost = new Map<string, string[]>();
+  for (const r of allowRows.results) (allowByPost.get(r.post_id) ?? allowByPost.set(r.post_id, []).get(r.post_id)!).push(r.character_id);
 
   const postsOut = posts.results.map((r) => ({
-    id: r.id, characterId: r.character_id, body: r.body,
+    id: r.id, characterId: r.character_id, authorId: r.author_id, body: r.body,
     parentPostId: r.parent_post_id ?? undefined, threadId: r.thread_id ?? undefined,
     createdAt: r.created_at,
+    replyScope: r.reply_scope === "restricted" ? "restricted" : "open",
+    replyAllowlist: allowByPost.get(r.id) ?? [],
     likedBy: likesByPost.get(r.id) ?? [],
     repostedBy: repostsByPost.get(r.id) ?? [],
   }));
@@ -126,6 +155,7 @@ export async function pullRoom(db: D1Database, authorId: string) {
     worldAccounts: worldAccounts.results.map(rowToWorldAccount),
     follows: follows.results.map(rowToFollow),
     posts: postsOut,
+    blocks: blocks.results.map(rowToBlock),
     drafts: draftsRow ? parseJSON<Record<string, string>>(draftsRow.data, {}) : {},
     session: { authorId },
   };

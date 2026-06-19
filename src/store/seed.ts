@@ -3,6 +3,7 @@ import type {
   Character,
   Follow,
   Post,
+  Relationship,
   WorldAccount,
   WroomDB,
 } from "../types";
@@ -38,6 +39,7 @@ export function buildSeedDB(): WroomDB {
       composerFont: "serif",
       autosave: true,
       keepEverythingPrivate: true,
+      appIcon: "cream",
     },
     createdAt: days(30),
   };
@@ -162,6 +164,32 @@ export function buildSeedDB(): WroomDB {
     f(dorsey.id, vera.id, 20),
   ];
 
+  // ---- Relationships (named bonds — not follows) ------------------------
+  // All same-author, so they're already accepted. They give the cast a shape a
+  // follow graph can't: who these people *are* to each other.
+  const rel = (
+    aId: string,
+    bId: string,
+    type: string,
+    ago: number
+  ): Relationship => ({
+    id: uid("rel"),
+    aId,
+    bId,
+    type,
+    status: "accepted",
+    requestedBy: aId,
+    createdAt: days(ago),
+    acceptedAt: days(ago),
+  });
+
+  const relationships: Relationship[] = [
+    rel(vera.id, elias.id, "uneasy allies", 24),
+    rel(vera.id, dorsey.id, "old adversaries", 20),
+    rel(lila.id, vera.id, "confidantes", 18),
+    rel(elias.id, lila.id, "estranged siblings", 17),
+  ];
+
   // ---- Posts ------------------------------------------------------------
   const p = (
     characterId: string,
@@ -171,8 +199,11 @@ export function buildSeedDB(): WroomDB {
   ): Post => ({
     id: uid("post"),
     characterId,
+    authorId,
     body,
     createdAt,
+    replyScope: "open",
+    replyAllowlist: [],
     likedBy: [],
     repostedBy: [],
     ...extra,
@@ -291,6 +322,8 @@ export function buildSeedDB(): WroomDB {
     worldAccounts,
     follows,
     posts,
+    blocks: [],
+    relationships,
     drafts: {},
     session: { authorId: null },
   };

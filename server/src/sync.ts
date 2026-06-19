@@ -48,9 +48,12 @@ sync.post("/", async (c) => {
   }
 
   // Wipe the author's child collections, then re-insert from the payload.
+  // (post_reply_allowlist rows cascade from posts on delete; blocks use a
+  // different owner column so they're cleared separately below.)
   for (const table of ["post_likes", "post_reposts", "posts", "follows", "world_accounts", "characters", "drafts"]) {
     statements.push(db.prepare(`DELETE FROM ${table} WHERE author_id = ?`).bind(authorId));
   }
+  statements.push(db.prepare("DELETE FROM blocks WHERE blocker_author_id = ?").bind(authorId));
 
   for (const raw of arr(payload.characters)) {
     const ch = raw as Json;
@@ -100,16 +103,24 @@ sync.post("/", async (c) => {
     statements.push(
       db
         .prepare(
-          `INSERT INTO posts (id, author_id, character_id, body, parent_post_id, thread_id, created_at)
-           VALUES (?,?,?,?,?,?,?)`,
+          `INSERT INTO posts (id, author_id, character_id, body, parent_post_id, thread_id, created_at, reply_scope)
+           VALUES (?,?,?,?,?,?,?,?)`,
         )
         .bind(
           p.id, authorId, str(p.characterId), str(p.body),
           p.parentPostId == null ? null : str(p.parentPostId),
           p.threadId == null ? null : str(p.threadId),
           num(p.createdAt, Date.now()),
+          p.replyScope === "restricted" ? "restricted" : "open",
         ),
     );
+    if (p.replyScope === "restricted") {
+      for (const cid of strArr(p.replyAllowlist)) {
+        statements.push(
+          db.prepare("INSERT OR IGNORE INTO post_reply_allowlist (post_id, character_id) VALUES (?,?)").bind(p.id, cid),
+        );
+      }
+    }
     for (const cid of strArr(p.likedBy)) {
       statements.push(
         db.prepare("INSERT OR IGNORE INTO post_likes (author_id, post_id, character_id) VALUES (?,?,?)").bind(authorId, p.id, cid),
@@ -120,6 +131,22 @@ sync.post("/", async (c) => {
         db.prepare("INSERT OR IGNORE INTO post_reposts (author_id, post_id, character_id) VALUES (?,?,?)").bind(authorId, p.id, cid),
       );
     }
+  }
+
+  // Blocks initiated by this author. target_type is the user-vs-persona grain;
+  // target_id is an author id or a character id. The mirror (mutual full hide)
+  // is derived at read time, so only the blocker's own rows are stored here.
+  for (const raw of arr(payload.blocks)) {
+    const b = raw as Json;
+    if (typeof b.id !== "string") continue;
+    const targetType = b.targetType === "persona" ? "persona" : "author";
+    statements.push(
+      db
+        .prepare(
+          "INSERT OR IGNORE INTO blocks (id, blocker_author_id, target_type, target_id, created_at) VALUES (?,?,?,?,?)",
+        )
+        .bind(b.id, authorId, targetType, str(b.targetId), num(b.createdAt, Date.now())),
+    );
   }
 
   // Drafts: one JSON blob per author.

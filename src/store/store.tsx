@@ -13,6 +13,7 @@ import type {
   AuthorSettings,
   Character,
   Post,
+  Relationship,
   WorldAccount,
   WroomDB,
 } from "../types";
@@ -34,13 +35,14 @@ export type SyncStatus = "idle" | "syncing" | "saved" | "error" | "offline";
 
 function defaultSettings(): AuthorSettings {
   return {
-    theme: "system",
+    theme: "dark",
     cardDensity: "comfortable",
     defaultPostLimit: 280,
     defaultPrivacy: "private",
     composerFont: "serif",
     autosave: true,
     keepEverythingPrivate: true,
+    appIcon: "cream",
   };
 }
 
@@ -77,9 +79,14 @@ function roomFromServer(room: WroomDB, fallbackAuthor: Author): WroomDB {
     follows: room.follows ?? [],
     posts: (room.posts ?? []).map((p) => ({
       ...p,
+      authorId: p.authorId ?? author.id,
+      replyScope: p.replyScope ?? "open",
+      replyAllowlist: p.replyAllowlist ?? [],
       likedBy: p.likedBy ?? [],
       repostedBy: p.repostedBy ?? [],
     })),
+    blocks: room.blocks ?? [],
+    relationships: room.relationships ?? [],
     drafts: room.drafts ?? {},
     session: { authorId: author.id },
   };
@@ -93,10 +100,14 @@ function scopedRoom(d: WroomDB, authorId: string): RoomPayload {
   const worldAccounts = d.worldAccounts.filter((w) => w.authorId === authorId);
   const follows = d.follows.filter((f) => charIds.has(f.followerId));
   const posts = d.posts.filter((p) => charIds.has(p.characterId));
+  // A bond is in this author's slice if either side is one of their characters.
+  const relationships = d.relationships.filter(
+    (r) => charIds.has(r.aId) || charIds.has(r.bId)
+  );
   const authors = a
     ? [{ id: a.id, name: a.name, email: a.email, avatar: a.avatar, settings: a.settings, createdAt: a.createdAt }]
     : [];
-  return { authors, characters, worldAccounts, follows, posts, drafts: d.drafts };
+  return { authors, characters, worldAccounts, follows, posts, relationships, drafts: d.drafts };
 }
 
 export interface NewCharacterInput {
@@ -158,6 +169,13 @@ interface StoreValue {
   // ---- follows ----
   isFollowing: (followerId: string, followeeId: string) => boolean;
   toggleFollow: (followerId: string, followeeId: string) => void;
+
+  // ---- relationships (typed, consented bonds) ----
+  requestRelationship: (aId: string, bId: string, type: string) => Relationship | null;
+  confirmRelationship: (id: string) => void;
+  declineRelationship: (id: string) => void;
+  removeRelationship: (id: string) => void;
+  updateRelationshipType: (id: string, type: string) => void;
 
   // ---- posts ----
   createPost: (input: {
@@ -319,6 +337,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           worldAccounts: [],
           follows: [],
           posts: [],
+          blocks: [],
+          relationships: [],
           drafts: {},
           session: { authorId: author.id },
         });
@@ -527,6 +547,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           follows: d.follows.filter(
             (f) => f.followerId !== id && f.followeeId !== id
           ),
+          relationships: d.relationships.filter(
+            (r) => r.aId !== id && r.bId !== id
+          ),
           posts: d.posts
             .filter((p) => p.characterId !== id)
             .filter((p) => !(p.parentPostId && postIds.has(p.parentPostId)))
@@ -606,6 +629,82 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // ---- relationships (typed, consented bonds — not follows) ----
+  /** Resolve any account id to its owning author (character or world account). */
+  const ownerOf = useCallback(
+    (accountId: string): string | null => {
+      const c = db.characters.find((x) => x.id === accountId);
+      if (c) return c.authorId;
+      const w = db.worldAccounts.find((x) => x.id === accountId);
+      return w ? w.authorId : null;
+    },
+    [db.characters, db.worldAccounts]
+  );
+
+  /** Propose a bond from `aId` to `bId`. Same-author pairs are confirmed instantly
+   *  (you own both sides); cross-author pairs stay pending until the other party
+   *  confirms. No-ops if a bond already exists between the two. */
+  const requestRelationship = useCallback(
+    (aId: string, bId: string, type: string): Relationship | null => {
+      if (aId === bId) return null;
+      const exists = db.relationships.find(
+        (r) =>
+          (r.aId === aId && r.bId === bId) || (r.aId === bId && r.bId === aId)
+      );
+      if (exists) return exists;
+      const sameAuthor =
+        ownerOf(aId) !== null && ownerOf(aId) === ownerOf(bId);
+      const now = Date.now();
+      const rel: Relationship = {
+        id: uid("rel"),
+        aId,
+        bId,
+        type: type.trim() || "connection",
+        status: sameAuthor ? "accepted" : "pending",
+        requestedBy: aId,
+        createdAt: now,
+        acceptedAt: sameAuthor ? now : undefined,
+      };
+      setDb((d) => ({ ...d, relationships: [...d.relationships, rel] }));
+      return rel;
+    },
+    [db.relationships, ownerOf]
+  );
+
+  const confirmRelationship = useCallback((id: string) => {
+    setDb((d) => ({
+      ...d,
+      relationships: d.relationships.map((r) =>
+        r.id === id ? { ...r, status: "accepted", acceptedAt: Date.now() } : r
+      ),
+    }));
+  }, []);
+
+  /** Decline a pending request — removes the row entirely. */
+  const declineRelationship = useCallback((id: string) => {
+    setDb((d) => ({
+      ...d,
+      relationships: d.relationships.filter((r) => r.id !== id),
+    }));
+  }, []);
+
+  /** Sever an established bond (or cancel one you requested). */
+  const removeRelationship = useCallback((id: string) => {
+    setDb((d) => ({
+      ...d,
+      relationships: d.relationships.filter((r) => r.id !== id),
+    }));
+  }, []);
+
+  const updateRelationshipType = useCallback((id: string, type: string) => {
+    setDb((d) => ({
+      ...d,
+      relationships: d.relationships.map((r) =>
+        r.id === id ? { ...r, type: type.trim() || "connection" } : r
+      ),
+    }));
+  }, []);
+
   // ---- posts ----
   const createPost = useCallback(
     (input: {
@@ -613,14 +712,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       body: string;
       parentPostId?: string;
       threadId?: string;
+      replyScope?: Post["replyScope"];
+      replyAllowlist?: string[];
     }): Post => {
+      const owner = db.characters.find((c) => c.id === input.characterId);
+      const restricted = input.replyScope === "restricted";
       const post: Post = {
         id: uid("post"),
         characterId: input.characterId,
+        authorId: owner?.authorId ?? db.session.authorId ?? "",
         body: input.body,
         parentPostId: input.parentPostId,
         threadId: input.threadId,
         createdAt: Date.now(),
+        replyScope: restricted ? "restricted" : "open",
+        replyAllowlist: restricted ? input.replyAllowlist ?? [] : [],
         likedBy: [],
         repostedBy: [],
       };
@@ -633,7 +739,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }));
       return post;
     },
-    []
+    [db.characters, db.session.authorId]
   );
 
   const deletePost = useCallback((id: string) => {
@@ -740,6 +846,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         follows: d.follows.filter(
           (f) => !charIds.has(f.followerId) && !charIds.has(f.followeeId) && !worldIds.has(f.followeeId)
         ),
+        relationships: d.relationships.filter(
+          (r) =>
+            !charIds.has(r.aId) && !charIds.has(r.bId) &&
+            !worldIds.has(r.aId) && !worldIds.has(r.bId)
+        ),
         posts: d.posts.filter((p) => !charIds.has(p.characterId)),
         session: { authorId: null },
       };
@@ -788,6 +899,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     deleteWorldAccount,
     isFollowing,
     toggleFollow,
+    requestRelationship,
+    confirmRelationship,
+    declineRelationship,
+    removeRelationship,
+    updateRelationshipType,
     createPost,
     deletePost,
     toggleLike,

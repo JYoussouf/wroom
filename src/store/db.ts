@@ -13,6 +13,8 @@ export function emptyDB(): WroomDB {
     worldAccounts: [],
     follows: [],
     posts: [],
+    blocks: [],
+    relationships: [],
     drafts: {},
     session: { authorId: null },
   };
@@ -77,6 +79,7 @@ function migrate(db: WroomDB): WroomDB {
     characters: db.characters ?? [],
     worldAccounts: db.worldAccounts ?? [],
     follows: db.follows ?? [],
+    relationships: db.relationships ?? [],
     posts: (db.posts ?? []).map((p) => ({
       ...p,
       likedBy: p.likedBy ?? [],

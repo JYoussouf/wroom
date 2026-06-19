@@ -2,23 +2,29 @@ import { useMemo, useState } from "react";
 import { useStore } from "../store/store";
 import { useNav } from "../nav";
 import {
+  acceptedRelationshipsOf,
+  accountName,
   followerCount,
   followingCount,
+  otherSide,
   postCount,
   profilePosts,
   profileTimeline,
+  relationshipBetween,
   resolveAccount,
 } from "../store/selectors";
 import { gradientBanner } from "../lib/avatars";
 import { Avatar } from "../components/Avatar";
 import { PostCard } from "../components/PostCard";
 import { PrivacyBadge } from "../components/PrivacyBadge";
+import { RelationshipSheet } from "../components/RelationshipSheet";
 import { IconBack, IconExport, IconSpark } from "../components/icons";
 
 export function CharacterProfile({ id }: { id: string }) {
   const { db, activeCharacterId, isFollowing, toggleFollow } = useStore();
   const { back, push } = useNav();
   const [tab, setTab] = useState<"posts" | "replies">("posts");
+  const [relOpen, setRelOpen] = useState(false);
 
   const acc = resolveAccount(db, id);
   if (!acc) {
@@ -44,6 +50,7 @@ export function CharacterProfile({ id }: { id: string }) {
       : gradientBanner(accent);
 
   const posts = useMemo(() => profilePosts(db, id), [db, id]);
+  const bonds = useMemo(() => acceptedRelationshipsOf(db, id), [db, id]);
   const all = useMemo(() => profileTimeline(db, id), [db, id]);
   const replies = useMemo(() => all.filter((p) => p.parentPostId), [all]);
   const shown = tab === "posts" ? posts : replies;
@@ -51,6 +58,21 @@ export function CharacterProfile({ id }: { id: string }) {
   const isSelf = id === activeCharacterId;
   const isMineToEdit = acc.kind === "character" && acc.authorId === db.session.authorId;
   const following = activeCharacterId ? isFollowing(activeCharacterId, id) : false;
+
+  // The typed bond between the stepped-in character and this profile.
+  const rel = activeCharacterId ? relationshipBetween(db, activeCharacterId, id) : null;
+  const canRelate =
+    !!activeCharacterId && !isSelf && acc.kind === "character";
+  const relRequestedByOther =
+    rel?.status === "pending" && rel.requestedBy !== activeCharacterId;
+  const relLabel =
+    rel?.status === "accepted"
+      ? rel.type
+      : relRequestedByOther
+        ? "Respond"
+        : rel?.status === "pending"
+          ? "Requested"
+          : "Relationship";
 
   return (
     <>
@@ -82,6 +104,17 @@ export function CharacterProfile({ id }: { id: string }) {
               {isMineToEdit && (
                 <button className="btn" onClick={() => push({ name: "share", id })}>
                   <IconExport size={16} /> Share
+                </button>
+              )}
+              {canRelate && (
+                <button
+                  className={`btn rel-btn ${rel?.status === "accepted" ? "rel-on" : ""} ${
+                    relRequestedByOther ? "rel-respond" : ""
+                  }`}
+                  onClick={() => setRelOpen(true)}
+                  title="Define a named relationship (not a follow)"
+                >
+                  <IconSpark size={14} /> {relLabel}
                 </button>
               )}
               {activeCharacterId && !isSelf && (
@@ -148,7 +181,7 @@ export function CharacterProfile({ id }: { id: string }) {
               <strong className="mono-num">{followingCount(db, id)}</strong> Following
             </button>
             <button onClick={() => push({ name: "connections", id, tab: "followers" })}>
-              <strong className="mono-num">{followerCount(db, id)}</strong> Followers
+              <strong className="mono-num">{followerCount(db, id)}</strong> Readers
             </button>
             <span className="dim">
               <strong className="mono-num" style={{ color: "var(--ink)" }}>
@@ -157,6 +190,39 @@ export function CharacterProfile({ id }: { id: string }) {
               Posts
             </span>
           </div>
+
+          {acc.kind === "character" && bonds.length > 0 && (
+            <div className="rel-strip">
+              <div className="section-label" style={{ margin: "0 0 var(--s-2)" }}>
+                Relationships
+              </div>
+              <div className="rel-chip-row">
+                {bonds.map((r) => {
+                  const partnerId = otherSide(r, id);
+                  const partner = resolveAccount(db, partnerId);
+                  if (!partner) return null;
+                  return (
+                    <button
+                      key={r.id}
+                      className="rel-chip"
+                      style={{ ["--accent" as string]: partner.accentColor }}
+                      onClick={() => push({ name: "profile", id: partnerId })}
+                      title={`${accountName(partner)} — ${r.type}`}
+                    >
+                      <Avatar
+                        name={accountName(partner)}
+                        src={partner.avatar}
+                        accent={partner.accentColor}
+                        size={24}
+                      />
+                      <span className="rel-chip-name">{accountName(partner)}</span>
+                      <span className="rel-chip-type">{r.type}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {acc.kind === "character" && (
             <div className="seg" style={{ marginTop: "var(--s-4)" }}>
@@ -190,6 +256,15 @@ export function CharacterProfile({ id }: { id: string }) {
           </div>
         </div>
       </div>
+
+      {canRelate && activeCharacterId && (
+        <RelationshipSheet
+          selfId={activeCharacterId}
+          otherId={id}
+          open={relOpen}
+          onClose={() => setRelOpen(false)}
+        />
+      )}
     </>
   );
 }
