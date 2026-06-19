@@ -32,6 +32,25 @@ export function CharacterSwitcher({
         </p>
       </div>
 
+      {sorted.length === 0 && (
+        <div className="empty" style={{ padding: "var(--s-5) var(--s-4)" }}>
+          <div className="glyph">✦</div>
+          <h3 className="serif">No one to step into yet</h3>
+          <p className="serif">
+            Invent your first character, then step into their world.
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              push({ name: "character-new" });
+              onClose();
+            }}
+          >
+            <IconPlus size={18} /> Create your first character
+          </button>
+        </div>
+      )}
+
       <div className="switcher-list">
         {sorted.map((c) => (
           <button

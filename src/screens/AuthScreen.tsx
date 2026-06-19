@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore } from "../store/store";
 import { IconSpark } from "../components/icons";
+import { BRAND_MARK } from "../lib/appIcon";
 
 type Mode = "in" | "up";
 
@@ -45,6 +46,18 @@ export function AuthScreen() {
         }}
       >
         <div style={{ maxWidth: 420, width: "100%", margin: "0 auto" }}>
+          <img
+            src={BRAND_MARK}
+            alt="Writer's Room"
+            width={72}
+            height={72}
+            style={{
+              width: 72,
+              height: 72,
+              marginBottom: "var(--s-4)",
+              display: "block",
+            }}
+          />
           <span className="fiction-tag">
             <IconSpark size={13} /> A tool for fiction
           </span>

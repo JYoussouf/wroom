@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useStore } from "../store/store";
 import { useNav } from "../nav";
 import type { CardDensity, ComposerFont, Privacy, ThemePref } from "../types";
+import { APP_ICONS } from "../lib/appIcon";
 import { fileToDataURL } from "../lib/image";
 import { Avatar } from "../components/Avatar";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -283,6 +284,26 @@ export function SettingsScreen() {
                   { value: "compact", label: "Compact" },
                 ]}
               />
+            </div>
+            <div className="field">
+              <label>App icon</label>
+              <div className="icon-picker">
+                {APP_ICONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    className={`icon-option ${(s.appIcon ?? "cream") === opt.key ? "on" : ""}`}
+                    aria-pressed={(s.appIcon ?? "cream") === opt.key}
+                    onClick={() => updateSettings({ appIcon: opt.key })}
+                  >
+                    <img src={opt.src} alt="" width={56} height={56} />
+                    <span>{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+              <span className="hint">
+                Sets the brand mark in the app and your browser-tab icon.
+              </span>
             </div>
           </section>
 
