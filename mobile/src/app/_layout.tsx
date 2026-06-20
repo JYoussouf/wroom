@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StoreProvider, useStore } from "@wroom/shared";
 
+import { Toast } from "@/components/Toast";
 import { useWroomTheme } from "@/theme/theme";
 
 /**
@@ -51,6 +52,7 @@ function RootNavigator() {
         <Stack.Screen name="auth" options={{ animation: "fade" }} />
         <Stack.Screen name="index" options={{ animation: "fade" }} />
       </Stack>
+      <Toast />
     </ThemeProvider>
   );
 }
