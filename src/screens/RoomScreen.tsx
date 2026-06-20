@@ -9,6 +9,7 @@ import {
 import { Avatar } from "../components/Avatar";
 import { CharacterCard } from "../components/CharacterCard";
 import { IconPlus, IconSearch, IconSettings, IconSpark } from "../components/icons";
+import { RichText } from "../components/RichText";
 import { relativeTime } from "../lib/time";
 
 export function RoomScreen() {
@@ -193,7 +194,7 @@ export function RoomScreen() {
                             </span>
                           )}
                         </div>
-                        <div className="txt">{post.body}</div>
+                        <div className="txt"><RichText text={post.body} /></div>
                       </div>
                     </button>
                   );

@@ -75,9 +75,9 @@ export const space = {
 export const radius = { sm: 8, md: 12, lg: 18, pill: 999 } as const;
 
 export const fonts = Platform.select({
-  ios: { serif: "Georgia", sans: "system-ui" },
-  android: { serif: "serif", sans: "sans-serif" },
-  default: { serif: "serif", sans: "System" },
+  ios: { serif: "Georgia", sans: "system-ui", mono: "Menlo" },
+  android: { serif: "serif", sans: "sans-serif", mono: "monospace" },
+  default: { serif: "serif", sans: "System", mono: "monospace" },
 })!;
 
 export function useWroomTheme(): WroomPalette {

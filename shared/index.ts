@@ -6,6 +6,7 @@ export * from "./lib/id";
 export * from "./lib/color";
 export * from "./lib/time";
 export * from "./lib/avatars";
+export * from "./lib/markup";
 export * from "./lib/shareHtml";
 export * from "./lib/api";
 export * from "./store/db";

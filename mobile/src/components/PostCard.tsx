@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useCallback, useState } from "react";
+import type { NativeSyntheticEvent, TextLayoutEventData } from "react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -6,12 +7,16 @@ import type { Post } from "@wroom/shared";
 import { useStore, resolveAccount, relativeTime } from "@wroom/shared";
 
 import { Avatar } from "./Avatar";
+import { RichText } from "./RichText";
 import { useWroomTheme, fonts, space, type } from "@/theme/theme";
 
 interface Props {
   post: Post;
   emphasis?: boolean;
 }
+
+/** Posts longer than this collapse behind a "Show more" toggle in feeds. */
+const COLLAPSED_LINES = 12;
 
 /** A single post, rendered with the editorial serif used for writing. */
 export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
@@ -27,6 +32,19 @@ export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
   const reposted = activeCharacterId ? post.repostedBy.includes(activeCharacterId) : false;
   const replyCount = db.posts.filter((p) => p.parentPostId === post.id).length;
   const flash = flashPostId === post.id;
+
+  // Collapse long bodies in the feed; `needsToggle === null` is the one-shot
+  // measuring pass that decides whether the post overflows COLLAPSED_LINES.
+  const [expanded, setExpanded] = useState(false);
+  const [needsToggle, setNeedsToggle] = useState<boolean | null>(null);
+  const onTextLayout = useCallback(
+    (e: NativeSyntheticEvent<TextLayoutEventData>) => {
+      setNeedsToggle((prev) =>
+        prev === null ? e.nativeEvent.lines.length > COLLAPSED_LINES : prev
+      );
+    },
+    []
+  );
 
   return (
     <Pressable
@@ -53,7 +71,30 @@ export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
           </Text>
         </View>
 
-        <Text style={[styles.body, { color: t.ink }]}>{post.body}</Text>
+        <Text
+          style={[styles.body, { color: t.ink }]}
+          onTextLayout={needsToggle === null ? onTextLayout : undefined}
+          numberOfLines={
+            needsToggle === null
+              ? COLLAPSED_LINES + 1
+              : expanded
+                ? undefined
+                : COLLAPSED_LINES
+          }
+        >
+          <RichText text={post.body} />
+        </Text>
+        {needsToggle && (
+          <Pressable
+            onPress={() => setExpanded((v) => !v)}
+            hitSlop={6}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, alignSelf: "flex-start" })}
+          >
+            <Text style={[styles.more, { color: accent }]}>
+              {expanded ? "Show less" : "Show more"}
+            </Text>
+          </Pressable>
+        )}
 
         <View style={styles.actions}>
           <Action
@@ -124,6 +165,7 @@ const styles = StyleSheet.create({
   name: { fontFamily: fonts.serif, fontSize: type.base, fontWeight: "600" },
   meta: { fontSize: type.xs },
   body: { fontFamily: fonts.serif, fontSize: type.base, lineHeight: type.base * 1.45 },
+  more: { fontSize: type.sm, fontWeight: "600", marginTop: space[1] },
   actions: { flexDirection: "row", gap: space[6], marginTop: space[2] },
   action: { flexDirection: "row", alignItems: "center", gap: space[2] },
   count: { fontSize: type.xs, fontVariant: ["tabular-nums"] },

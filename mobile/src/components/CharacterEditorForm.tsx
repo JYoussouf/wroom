@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Image,
   Pressable,
@@ -15,6 +15,7 @@ import { useStore, ACCENT_PALETTE, randomAccent, type Privacy } from "@wroom/sha
 
 import { Avatar } from "@/components/Avatar";
 import { Pill, PrivacyBadge } from "@/components/Pill";
+import { RichText } from "@/components/RichText";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
@@ -56,6 +57,19 @@ export function CharacterEditorForm({ editId }: { editId?: string }) {
   const [privacy, setPrivacy] = useState<Privacy>(
     existing?.privacy ?? currentAuthor?.settings.defaultPrivacy ?? "private"
   );
+
+  // Bio formatting: mirror the composer's selection-wrap behavior.
+  const bioSelRef = useRef({ start: 0, end: 0 });
+  const [bioForced, setBioForced] = useState<{ start: number; end: number } | undefined>(undefined);
+  function formatBio(before: string, after: string) {
+    const { start, end } = bioSelRef.current;
+    const selected = bio.slice(start, end);
+    setBio(bio.slice(0, start) + before + selected + after + bio.slice(end));
+    const pos = start + before.length;
+    const next = { start: pos, end: pos + selected.length };
+    bioSelRef.current = next;
+    setBioForced(next);
+  }
 
   const normalized = normalizeHandle(handle);
   const handleTaken = normalized.length > 0 && !isHandleAvailable(normalized, existing?.id);
@@ -113,7 +127,7 @@ export function CharacterEditorForm({ editId }: { editId?: string }) {
                 </View>
                 <Text style={[styles.fictionTag, { color: t.accent }]}>✦ Fiction</Text>
               </View>
-              {!!bio.trim() && <Text style={[styles.previewBio, { color: t.ink }]}>{bio}</Text>}
+              {!!bio.trim() && <Text style={[styles.previewBio, { color: t.ink }]}><RichText text={bio} /></Text>}
               {flavor.length > 0 && (
                 <View style={styles.flavorRow}>
                   {flavor.map((f) => <Pill key={f}>{f as string}</Pill>)}
@@ -170,7 +184,34 @@ export function CharacterEditorForm({ editId }: { editId?: string }) {
           </Text>
         </View>
 
-        <Input t={t} label="Bio" value={bio} onChangeText={setBio} placeholder="A line or two in their voice." multiline maxLength={300} />
+        <View>
+          <Input
+            t={t}
+            label="Bio"
+            value={bio}
+            onChangeText={setBio}
+            placeholder="A line or two in their voice."
+            multiline
+            maxLength={300}
+            selection={bioForced}
+            onSelectionChange={(e) => {
+              bioSelRef.current = e.nativeEvent.selection;
+              if (bioForced) setBioForced(undefined);
+            }}
+          />
+          <View style={styles.fmtBar}>
+            <Pressable onPress={() => formatBio("**", "**")} accessibilityLabel="Bold" style={[styles.fmtBtn, { borderColor: t.border }]}>
+              <Text style={[styles.fmtGlyph, { color: t.ink, fontWeight: "800" }]}>B</Text>
+            </Pressable>
+            <Pressable onPress={() => formatBio("*", "*")} accessibilityLabel="Italic" style={[styles.fmtBtn, { borderColor: t.border }]}>
+              <Text style={[styles.fmtGlyph, { color: t.ink, fontStyle: "italic" }]}>I</Text>
+            </Pressable>
+            <Pressable onPress={() => formatBio("~~", "~~")} accessibilityLabel="Strikethrough" style={[styles.fmtBtn, { borderColor: t.border }]}>
+              <Text style={[styles.fmtGlyph, { color: t.ink, textDecorationLine: "line-through" }]}>S</Text>
+            </Pressable>
+            <Text style={[styles.fmtHint, { color: t.ink3 }]}>**bold** *italic*</Text>
+          </View>
+        </View>
 
         <View style={styles.row}>
           <Input t={t} style={styles.flex1} label="Pronouns" value={pronouns} onChangeText={setPronouns} placeholder="she/her" />
@@ -265,6 +306,18 @@ const styles = StyleSheet.create({
   field: { gap: space[1] },
   label: { fontSize: type.sm, fontWeight: "600" },
   hint: { fontSize: type.xs },
+  fmtBar: { flexDirection: "row", alignItems: "center", gap: space[2], marginTop: space[2] },
+  fmtBtn: {
+    minWidth: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: space[2],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.sm,
+  },
+  fmtGlyph: { fontSize: type.base },
+  fmtHint: { fontSize: type.xs, flex: 1, fontFamily: fonts.mono },
   saveBtn: { paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.pill },
   saveText: { fontSize: type.sm, fontWeight: "600" },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space[3], paddingVertical: space[3], fontSize: type.base },

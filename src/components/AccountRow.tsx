@@ -2,6 +2,7 @@ import type { Account } from "../types";
 import { useStore } from "../store/store";
 import { useNav } from "../nav";
 import { Avatar } from "./Avatar";
+import { RichText } from "./RichText";
 
 /** A row in a followers/following/discovery list, with an optional follow toggle. */
 export function AccountRow({
@@ -34,7 +35,7 @@ export function AccountRow({
           </div>
           <span className="handle">@{account.handle}</span>
           {account.kind === "character" && account.bio && (
-            <p className="account-row-bio serif">{account.bio}</p>
+            <p className="account-row-bio serif"><RichText text={account.bio} /></p>
           )}
         </div>
       </button>

@@ -12,7 +12,8 @@ export function CharacterSwitcher({
   open: boolean;
   onClose: () => void;
 }) {
-  const { myCharacters, activeCharacterId, stepInto, stepOut } = useStore();
+  const { myCharacters, activeCharacterId, currentAuthor, stepInto, stepOut } =
+    useStore();
   const { reset, push } = useNav();
 
   const sorted = [...myCharacters].sort((a, b) => b.lastActiveAt - a.lastActiveAt);
@@ -20,6 +21,12 @@ export function CharacterSwitcher({
   function choose(id: string) {
     stepInto(id);
     reset({ name: "home" });
+    onClose();
+  }
+
+  function toAuthor() {
+    stepOut();
+    reset({ name: "room" });
     onClose();
   }
 
@@ -52,6 +59,30 @@ export function CharacterSwitcher({
       )}
 
       <div className="switcher-list">
+        {currentAuthor && (
+          <>
+            <button
+              className={`switcher-row author-row ${activeCharacterId === null ? "active" : ""}`}
+              style={{ ["--accent" as string]: "var(--brand, #b4532a)" }}
+              onClick={toAuthor}
+            >
+              <Avatar
+                name={currentAuthor.name}
+                src={currentAuthor.avatar}
+                accent="#b4532a"
+                size={42}
+              />
+              <div className="switcher-id">
+                <div className="serif name">{currentAuthor.name}</div>
+                <div className="handle">You · the author</div>
+              </div>
+              {activeCharacterId === null && (
+                <span className="pill accent">Active</span>
+              )}
+            </button>
+            <div className="switcher-divider" />
+          </>
+        )}
         {sorted.map((c) => (
           <button
             key={c.id}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useStore } from "../store/store";
 import { useNav } from "../nav";
 import type { Privacy } from "../types";
@@ -6,6 +6,7 @@ import { ACCENT_PALETTE, randomAccent } from "../lib/color";
 import { gradientBanner } from "../lib/avatars";
 import { fileToDataURL } from "../lib/image";
 import { Avatar } from "../components/Avatar";
+import { RichText } from "../components/RichText";
 import { PrivacyBadge } from "../components/PrivacyBadge";
 import { IconBack, IconLock, IconGlobe } from "../components/icons";
 
@@ -38,6 +39,22 @@ export function CharacterEditor({ editId }: { editId?: string }) {
     existing?.privacy ?? currentAuthor?.settings.defaultPrivacy ?? "private"
   );
   const [imgError, setImgError] = useState<string | null>(null);
+  const bioRef = useRef<HTMLTextAreaElement>(null);
+
+  /** Wrap the current bio selection (or caret) in markup delimiters. */
+  function formatBio(before: string, after: string) {
+    const el = bioRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = bio.slice(start, end);
+    setBio(bio.slice(0, start) + before + selected + after + bio.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + before.length;
+      el.setSelectionRange(pos, pos + selected.length);
+    });
+  }
 
   const normalized = normalizeHandle(handle);
   const handleTaken =
@@ -142,7 +159,7 @@ export function CharacterEditor({ editId }: { editId?: string }) {
                 </div>
                 {bio.trim() && (
                   <p className="serif" style={{ marginTop: "var(--s-3)", color: "var(--ink)" }}>
-                    {bio}
+                    <RichText text={bio} />
                   </p>
                 )}
                 {flavor.length > 0 && (
@@ -252,12 +269,48 @@ export function CharacterEditor({ editId }: { editId?: string }) {
             <label htmlFor="c-bio">Bio</label>
             <textarea
               id="c-bio"
+              ref={bioRef}
               className="textarea"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="A line or two in their voice."
               maxLength={300}
             />
+            <div className="fmt-bar">
+              <button
+                type="button"
+                className="fmt-btn"
+                aria-label="Bold"
+                title="Bold"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => formatBio("**", "**")}
+              >
+                <span className="b">B</span>
+              </button>
+              <button
+                type="button"
+                className="fmt-btn"
+                aria-label="Italic"
+                title="Italic"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => formatBio("*", "*")}
+              >
+                <span className="i">I</span>
+              </button>
+              <button
+                type="button"
+                className="fmt-btn"
+                aria-label="Strikethrough"
+                title="Strikethrough"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => formatBio("~~", "~~")}
+              >
+                <span className="s">S</span>
+              </button>
+              <span className="fmt-hint">
+                <code>**bold**</code> <code>*italic*</code>
+              </span>
+            </div>
           </div>
 
           {/* ---- Flavor ---- */}

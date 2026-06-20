@@ -79,11 +79,11 @@ export default function AuthScreen() {
 
           {mode === "up" && (
             <Field
-              label="Your name"
+              label="Username"
               value={name}
               onChangeText={setName}
-              placeholder="The author behind the room"
-              autoComplete="name"
+              placeholder="Pick a username"
+              autoComplete="username"
               t={t}
             />
           )}
@@ -122,7 +122,7 @@ export default function AuthScreen() {
               <ActivityIndicator color={t.accentInk} />
             ) : (
               <Text style={[styles.primaryText, { color: t.accentInk }]}>
-                {mode === "up" ? "Create your room" : "Enter your room"}
+                {mode === "up" ? "Create your wroom" : "Enter your wroom"}
               </Text>
             )}
           </Pressable>

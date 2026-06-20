@@ -5,6 +5,7 @@ import { useStore } from "@wroom/shared";
 
 import { Avatar } from "./Avatar";
 import { Pill } from "./Pill";
+import { RichText } from "./RichText";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
 /** A row in a followers/following/discovery list, with an optional follow toggle. */
@@ -31,7 +32,7 @@ export function AccountRow({ account, showFollow = true }: { account: Account; s
           <Text style={[styles.handle, { color: t.ink3 }]}>@{account.handle}</Text>
           {account.kind === "character" && !!account.bio && (
             <Text style={[styles.bio, { color: t.ink2 }]} numberOfLines={2}>
-              {account.bio}
+              <RichText text={account.bio} />
             </Text>
           )}
         </View>

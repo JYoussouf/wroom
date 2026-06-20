@@ -4,6 +4,7 @@ import { useNav } from "../nav";
 import { resolveAccount } from "../store/selectors";
 import { relativeTime } from "../lib/time";
 import { Avatar } from "./Avatar";
+import { RichText } from "./RichText";
 import {
   IconHeart,
   IconHeartFill,
@@ -72,7 +73,7 @@ export function PostCard({ post, threadLineTop, threadLineBottom, emphasis }: Pr
           </span>
         </div>
 
-        <p className="post-body serif">{post.body}</p>
+        <p className="post-body serif"><RichText text={post.body} /></p>
 
         <div className="post-actions" onClick={(e) => e.stopPropagation()}>
           <button

@@ -13,6 +13,7 @@ import {
 
 import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
+import { RichText } from "@/components/RichText";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
@@ -61,7 +62,7 @@ export default function PostDetailScreen() {
             </View>
           </Pressable>
 
-          <Text style={[styles.focusBody, { color: t.ink }]}>{post.body}</Text>
+          <Text style={[styles.focusBody, { color: t.ink }]}><RichText text={post.body} /></Text>
           <Text style={[styles.time, { color: t.ink3 }]}>{fullTime(post.createdAt)}</Text>
 
           {(post.likedBy.length > 0 || post.repostedBy.length > 0) && (

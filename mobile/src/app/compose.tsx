@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -14,7 +14,6 @@ import { Feather } from "@expo/vector-icons";
 import { useStore, getPost, resolveAccount } from "@wroom/shared";
 
 import { Avatar } from "@/components/Avatar";
-import { CharCountRing } from "@/components/CharCountRing";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
@@ -35,7 +34,6 @@ export default function ComposeScreen() {
   const t = useWroomTheme();
 
   const c = activeCharacter;
-  const limit = c?.postLimit ?? currentAuthor?.settings.defaultPostLimit ?? 280;
   const useSerif = currentAuthor?.settings.composerFont !== "sans";
   const autosave = currentAuthor?.settings.autosave ?? true;
 
@@ -47,6 +45,21 @@ export default function ComposeScreen() {
   const [text, setText] = useState(() => (draftKey ? getDraft(draftKey) : ""));
   const [segments, setSegments] = useState<string[]>([]);
   const [savedFlash, setSavedFlash] = useState(false);
+
+  // Track the live selection in a ref; `forcedSel` momentarily takes control of
+  // the cursor right after a format button wraps the selection, then releases.
+  const selRef = useRef({ start: 0, end: 0 });
+  const [forcedSel, setForcedSel] = useState<{ start: number; end: number } | undefined>(undefined);
+
+  function applyFormat(before: string, after: string) {
+    const { start, end } = selRef.current;
+    const selected = text.slice(start, end);
+    setText(text.slice(0, start) + before + selected + after + text.slice(end));
+    const pos = start + before.length;
+    const next = { start: pos, end: pos + selected.length };
+    selRef.current = next;
+    setForcedSel(next);
+  }
 
   // Continuous, per-character draft autosave.
   useEffect(() => {
@@ -79,14 +92,12 @@ export default function ComposeScreen() {
   const parent = replyTo ? getPost(db, replyTo) : null;
   const parentAuthor = parent ? resolveAccount(db, parent.characterId) : null;
 
-  const count = text.length;
-  const over = count > limit;
   const hasContent = text.trim().length > 0;
-  const canPost = (segments.length > 0 || hasContent) && !over;
+  const canPost = segments.length > 0 || hasContent;
   const isThread = segments.length > 0;
 
   function addToThread() {
-    if (!hasContent || over) return;
+    if (!hasContent) return;
     setSegments((s) => [...s, text.trim()]);
     setText("");
   }
@@ -190,6 +201,11 @@ export default function ComposeScreen() {
             onChangeText={setText}
             multiline
             autoFocus
+            selection={forcedSel}
+            onSelectionChange={(e) => {
+              selRef.current = e.nativeEvent.selection;
+              if (forcedSel) setForcedSel(undefined);
+            }}
             placeholder={
               replyTo
                 ? "Write your reply…"
@@ -202,6 +218,31 @@ export default function ComposeScreen() {
           />
         </View>
 
+        <View style={styles.fmtBar}>
+          <Pressable
+            onPress={() => applyFormat("**", "**")}
+            accessibilityLabel="Bold"
+            style={[styles.fmtBtn, { borderColor: t.border }]}
+          >
+            <Text style={[styles.fmtGlyph, { color: t.ink, fontWeight: "800" }]}>B</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => applyFormat("*", "*")}
+            accessibilityLabel="Italic"
+            style={[styles.fmtBtn, { borderColor: t.border }]}
+          >
+            <Text style={[styles.fmtGlyph, { color: t.ink, fontStyle: "italic" }]}>I</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => applyFormat("~~", "~~")}
+            accessibilityLabel="Strikethrough"
+            style={[styles.fmtBtn, { borderColor: t.border }]}
+          >
+            <Text style={[styles.fmtGlyph, { color: t.ink, textDecorationLine: "line-through" }]}>S</Text>
+          </Pressable>
+          <Text style={[styles.fmtHint, { color: t.ink3 }]}>**bold** *italic* ~~strike~~ `code`</Text>
+        </View>
+
         <View style={styles.voice}>
           <Feather name="feather" size={13} color={t.ink3} />
           <Text style={[styles.voiceText, { color: t.ink3 }]}>
@@ -210,20 +251,19 @@ export default function ComposeScreen() {
           </Text>
         </View>
 
-        <View style={styles.toolbar}>
-          {!replyTo && (
+        {!replyTo && (
+          <View style={styles.toolbar}>
             <Pressable
               onPress={addToThread}
-              disabled={!hasContent || over}
-              style={[styles.threadBtn, { borderColor: t.border, opacity: !hasContent || over ? 0.4 : 1 }]}
+              disabled={!hasContent}
+              style={[styles.threadBtn, { borderColor: t.border, opacity: !hasContent ? 0.4 : 1 }]}
             >
               <Feather name="plus" size={16} color={t.ink2} />
               <Text style={[styles.threadBtnText, { color: t.ink2 }]}>Add to thread</Text>
             </Pressable>
-          )}
-          <View style={styles.flex1} />
-          <CharCountRing count={count} limit={limit} />
-        </View>
+            <View style={styles.flex1} />
+          </View>
+        )}
 
         <Text style={[styles.fiction, { color: t.ink3 }]}>
           Fiction — every post here is invented craft, private to you.
@@ -258,6 +298,18 @@ const styles = StyleSheet.create({
   segmentBody: { fontFamily: fonts.serif, fontSize: type.base, marginTop: 2, lineHeight: type.base * 1.45 },
   composeRow: { flexDirection: "row", gap: space[3], alignItems: "flex-start" },
   field: { flex: 1, fontSize: type.lg, lineHeight: type.lg * 1.4, minHeight: 120, paddingTop: space[2] },
+  fmtBar: { flexDirection: "row", alignItems: "center", gap: space[2], marginTop: space[3] },
+  fmtBtn: {
+    minWidth: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: space[2],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.sm,
+  },
+  fmtGlyph: { fontSize: type.base },
+  fmtHint: { fontSize: type.xs, flex: 1, fontFamily: fonts.mono },
   voice: { flexDirection: "row", alignItems: "center", gap: space[2], marginTop: space[4] },
   voiceText: { fontSize: type.xs, flex: 1 },
   toolbar: { flexDirection: "row", alignItems: "center", marginTop: space[4] },

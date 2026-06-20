@@ -12,7 +12,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import Slider from "@react-native-community/slider";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
@@ -226,14 +225,6 @@ export default function SettingsScreen() {
       <Group title="Writing" t={t}>
         <Seg label="Composer font" t={t} value={s.composerFont} onChange={(composerFont: ComposerFont) => updateSettings({ composerFont })}
           options={[{ value: "serif", label: "Serif" }, { value: "sans", label: "Sans" }]} />
-        <Text style={[styles.label, { color: t.ink2 }]}>
-          Default post length limit: <Text style={{ fontWeight: "700", color: t.ink }}>{s.defaultPostLimit}</Text>
-        </Text>
-        <Slider
-          minimumValue={80} maximumValue={1000} step={20} value={s.defaultPostLimit}
-          onSlidingComplete={(v) => updateSettings({ defaultPostLimit: Math.round(v) })}
-          minimumTrackTintColor={t.accent} maximumTrackTintColor={t.border} thumbTintColor={t.accent}
-        />
         <Toggle label="Autosave drafts" t={t} value={s.autosave} onValueChange={(autosave) => updateSettings({ autosave })} />
       </Group>
 

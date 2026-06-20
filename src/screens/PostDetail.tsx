@@ -9,6 +9,7 @@ import {
 } from "../store/selectors";
 import { Avatar } from "../components/Avatar";
 import { PostCard } from "../components/PostCard";
+import { RichText } from "../components/RichText";
 import {
   IconBack,
   IconHeart,
@@ -90,7 +91,7 @@ export function PostDetail({ id }: { id: string }) {
               </div>
             </button>
 
-            <p className="post-focus-body serif">{post.body}</p>
+            <p className="post-focus-body serif"><RichText text={post.body} /></p>
 
             <div className="dim" style={{ fontSize: "var(--step--1)", marginTop: "var(--s-2)" }}>
               {fullTime(post.createdAt)}

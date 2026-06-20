@@ -90,6 +90,24 @@ export function ComposeScreen({ replyTo }: { replyTo?: string }) {
     el.style.height = el.scrollHeight + "px";
   }
 
+  /** Wrap the current textarea selection (or caret) in markup delimiters. */
+  function applyFormat(before: string, after: string) {
+    const el = taRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = text.slice(start, end);
+    const next = text.slice(0, start) + before + selected + after + text.slice(end);
+    setText(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + before.length;
+      el.setSelectionRange(pos, pos + selected.length);
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    });
+  }
+
   function addToThread() {
     if (!hasContent || over) return;
     setSegments((s) => [...s, text.trim()]);
@@ -231,6 +249,42 @@ export function ComposeScreen({ replyTo }: { replyTo?: string }) {
                 aria-label="Compose post"
               />
             </div>
+          </div>
+
+          <div className="fmt-bar">
+            <button
+              type="button"
+              className="fmt-btn"
+              aria-label="Bold"
+              title="Bold"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyFormat("**", "**")}
+            >
+              <span className="b">B</span>
+            </button>
+            <button
+              type="button"
+              className="fmt-btn"
+              aria-label="Italic"
+              title="Italic"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyFormat("*", "*")}
+            >
+              <span className="i">I</span>
+            </button>
+            <button
+              type="button"
+              className="fmt-btn"
+              aria-label="Strikethrough"
+              title="Strikethrough"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyFormat("~~", "~~")}
+            >
+              <span className="s">S</span>
+            </button>
+            <span className="fmt-hint">
+              <code>**bold**</code> <code>*italic*</code> <code>~~strike~~</code>
+            </span>
           </div>
 
           <div className="compose-voice">

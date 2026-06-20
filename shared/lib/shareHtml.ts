@@ -2,6 +2,7 @@ import type { Character, Post } from "../types";
 import { relativeTime } from "./time";
 import { monogram } from "./avatars";
 import { inkOn } from "./color";
+import { inlineMarkupToHtml } from "./markup";
 
 function esc(s: string): string {
   return s
@@ -41,7 +42,7 @@ export function buildShareHtml(character: Character, posts: Post[]): string {
           <strong>${esc(character.displayName)}</strong>
           <span class="muted">@${esc(character.handle)} · ${esc(relativeTime(p.createdAt))}</span>
         </div>
-        <p>${esc(p.body)}</p>
+        <p>${inlineMarkupToHtml(p.body)}</p>
       </article>`
     )
     .join("");
@@ -78,7 +79,7 @@ export function buildShareHtml(character: Character, posts: Post[]): string {
     <h1>${esc(character.displayName)}</h1>
     <div class="handle">@${esc(character.handle)}</div>
     <div><span class="fiction">✦ Fictional character</span></div>
-    ${character.bio ? `<p class="bio">${esc(character.bio)}</p>` : ""}
+    ${character.bio ? `<p class="bio">${inlineMarkupToHtml(character.bio)}</p>` : ""}
     ${flavor ? `<div>${flavor}</div>` : ""}
     ${character.voiceNote ? `<p class="voice">“${esc(character.voiceNote)}”</p>` : ""}
     <h2 style="font-family:Georgia,serif;margin-top:28px">Posts</h2>

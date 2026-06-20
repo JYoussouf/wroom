@@ -6,6 +6,7 @@ import { buildShareHtml } from "../lib/shareHtml";
 import { gradientBanner } from "../lib/avatars";
 import { Avatar } from "../components/Avatar";
 import { IconBack, IconExport, IconGlobe, IconSpark } from "../components/icons";
+import { RichText } from "../components/RichText";
 
 export function ShareScreen({ id }: { id: string }) {
   const { db, updateCharacter, showToast } = useStore();
@@ -119,13 +120,13 @@ export function ShareScreen({ id }: { id: string }) {
                   </div>
                   {c.bio && (
                     <p className="serif" style={{ marginTop: "var(--s-3)" }}>
-                      {c.bio}
+                      <RichText text={c.bio} />
                     </p>
                   )}
                   <div className="section-label">{posts.length} posts</div>
                   {posts.slice(0, 3).map((p) => (
                     <p key={p.id} className="serif" style={{ borderTop: "1px solid var(--hairline)", paddingTop: "var(--s-3)", marginTop: 0 }}>
-                      {p.body}
+                      <RichText text={p.body} />
                     </p>
                   ))}
                   {posts.length > 3 && (

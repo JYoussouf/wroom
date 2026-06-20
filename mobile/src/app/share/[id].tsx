@@ -9,6 +9,7 @@ import * as Clipboard from "expo-clipboard";
 import { useStore, getCharacter, profilePosts, buildShareHtml } from "@wroom/shared";
 
 import { Avatar } from "@/components/Avatar";
+import { RichText } from "@/components/RichText";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
@@ -109,11 +110,11 @@ export default function ShareScreen() {
               </View>
               <Text style={[styles.fictionTag, { color: t.accent }]}>✦ Fictional</Text>
             </View>
-            {!!c.bio && <Text style={[styles.bio, { color: t.ink }]}>{c.bio}</Text>}
+            {!!c.bio && <Text style={[styles.bio, { color: t.ink }]}><RichText text={c.bio} /></Text>}
             <Text style={[styles.sectionLabel, { color: t.ink3 }]}>{posts.length} posts</Text>
             {posts.slice(0, 3).map((p) => (
               <Text key={p.id} style={[styles.previewPost, { color: t.ink, borderTopColor: t.border }]}>
-                {p.body}
+                <RichText text={p.body} />
               </Text>
             ))}
             {posts.length > 3 && <Text style={[styles.more, { color: t.ink3 }]}>+{posts.length - 3} more in the export</Text>}

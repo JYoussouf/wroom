@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store/store";
 import { useNav } from "../nav";
+import { RichText } from "../components/RichText";
 import {
   acceptedRelationshipsOf,
   accountName,
@@ -146,7 +147,7 @@ export function CharacterProfile({ id }: { id: string }) {
             <>
               {acc.bio && (
                 <p className="serif" style={{ marginTop: "var(--s-3)", fontSize: "var(--step-1)" }}>
-                  {acc.bio}
+                  <RichText text={acc.bio} />
                 </p>
               )}
               {[acc.pronouns, acc.occupation, acc.location, acc.eraTag].filter(Boolean)

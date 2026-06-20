@@ -11,7 +11,6 @@
       "apiBaseUrl": "https://wroom-api.joseppy-workers.workers.dev"
     },
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "io.wroom.app",
       "supportsTablet": true
     },

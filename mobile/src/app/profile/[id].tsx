@@ -15,6 +15,7 @@ import {
 
 import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
+import { RichText } from "@/components/RichText";
 import { Pill, PrivacyBadge } from "@/components/Pill";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
@@ -98,7 +99,7 @@ export default function ProfileScreen() {
 
         {acc.kind === "character" && (
           <>
-            {!!acc.bio && <Text style={[styles.bio, { color: t.ink }]}>{acc.bio}</Text>}
+            {!!acc.bio && <Text style={[styles.bio, { color: t.ink }]}><RichText text={acc.bio} /></Text>}
             {flavors.length > 0 && (
               <View style={styles.flavorRow}>
                 {flavors.map((f) => (
