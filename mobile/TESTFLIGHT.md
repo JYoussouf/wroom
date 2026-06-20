@@ -16,6 +16,12 @@ from the codebase.
 - `ITSAppUsesNonExemptEncryption: false` — the app only uses standard HTTPS, so
   TestFlight won't ask the export-compliance question on every build.
 - Production API URL baked in via `extra.apiBaseUrl`.
+- **Push notifications** (`expo-notifications`) — the client side is wired
+  (permission flow + Expo push-token fetch). Expo adds the `aps-environment`
+  entitlement automatically at build time. Two things to know: the in-app push
+  token only resolves once the EAS project is linked (`eas init`), and **remote
+  delivery is a server follow-up** — the Worker doesn't send pushes on events
+  yet, so push toggles work but won't deliver until that lands.
 - `eas.json` has a `production` build profile (remote app version, auto-increment
   build number) and a `production` submit profile.
 
@@ -29,6 +35,10 @@ from the codebase.
 4. Decide on App Privacy answers: the app collects an **email + password**
    (account) and stores user-authored content; you'll fill the Data Collection
    questionnaire in App Store Connect.
+5. **Push key (APNs)** — since the app ships with `expo-notifications`, the first
+   `eas build` will offer to set up a Push Notifications key. Let EAS create and
+   manage it (or attach an existing one via `eas credentials`). Not required to
+   install on TestFlight, but needed before push can actually deliver.
 
 ## Build & submit
 
