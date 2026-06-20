@@ -7,8 +7,6 @@ server/.dev.vars
 server/.wrangler/
 
 # build output
-dist/
-dist-ssr/
 *.local
 *.tsbuildinfo
 
@@ -30,17 +28,3 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
-
-# capacitor / ios build artifacts
-ios/App/Pods/
-ios/App/App/public/
-ios/App/build/
-ios/.gradle/
-ios/capacitor-cordova-ios-plugins/
-DerivedData/
-*.xcuserstate
-xcuserdata/
-
-# local beta-test tooling (not part of the app)
-.betatest.mjs
-.sharetest.mjs
