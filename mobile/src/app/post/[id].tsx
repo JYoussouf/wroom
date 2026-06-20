@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import {
@@ -19,11 +19,34 @@ import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { db, activeCharacterId, toggleLike, toggleRepost } = useStore();
+  const { db, activeCharacterId, toggleLike, toggleRepost, deletePost, myCharacters } = useStore();
   const router = useRouter();
   const t = useWroomTheme();
 
   const post = id ? getPost(db, id) : null;
+  const isMine = !!post && myCharacters.some((c) => c.id === post.characterId);
+
+  function confirmDelete() {
+    if (!post) return;
+    const replyCount = db.posts.filter((p) => p.parentPostId === post.id).length;
+    Alert.alert(
+      "Delete this post?",
+      replyCount > 0
+        ? `This post and its ${replyCount} ${replyCount === 1 ? "reply" : "replies"} will be permanently removed.`
+        : "This post will be permanently removed.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deletePost(post.id);
+            router.back();
+          },
+        },
+      ]
+    );
+  }
   const ancestors = useMemo(() => (id ? ancestorsOf(db, id) : []), [db, id]);
   const replies = useMemo(() => (id ? repliesTo(db, id) : []), [db, id]);
 
@@ -44,7 +67,16 @@ export default function PostDetailScreen() {
 
   return (
     <View style={[styles.fill, { backgroundColor: t.bg }]}>
-      <ScreenHeader title="Thread" />
+      <ScreenHeader
+        title="Thread"
+        right={
+          isMine ? (
+            <Pressable onPress={confirmDelete} hitSlop={10} accessibilityLabel="Delete post">
+              <Feather name="trash-2" size={20} color={t.ink2} />
+            </Pressable>
+          ) : undefined
+        }
+      />
       <ScrollView contentContainerStyle={{ paddingBottom: space[7] }}>
         {ancestors.map((a) => (
           <PostCard key={a.id} post={a} />
