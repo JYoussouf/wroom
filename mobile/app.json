@@ -12,7 +12,12 @@
     },
     "ios": {
       "bundleIdentifier": "io.wroom.app",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": "./assets/images/wroom-icon-ios.png",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Writer's Room uses your photo library so you can set avatars and banners for your characters.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
