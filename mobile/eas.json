@@ -23,6 +23,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "josephyoussouf@hotmail.com",
+        "ascAppId": "6782418848",
+        "appleTeamId": "T7W52GCBM2"
+      }
+    }
   }
 }
