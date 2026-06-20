@@ -28,6 +28,9 @@
         "appleId": "josephyoussouf@hotmail.com",
         "ascAppId": "6782418848",
         "appleTeamId": "T7W52GCBM2"
+      },
+      "android": {
+        "track": "internal"
       }
     }
   }
