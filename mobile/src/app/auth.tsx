@@ -8,9 +8,11 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useColorScheme,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image } from "expo-image";
 import { useStore } from "@wroom/shared";
 
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
@@ -20,6 +22,12 @@ type Mode = "in" | "up";
 export default function AuthScreen() {
   const { logIn, signUp, enterDemo } = useStore();
   const t = useWroomTheme();
+  // Wordmark has no background, so pick the variant that contrasts with the
+  // current theme: accent-dot black in light mode, white in dark mode.
+  const wordmark =
+    useColorScheme() === "light"
+      ? require("../../assets/images/wroom-wordmark-black-dot-transparent.png")
+      : require("../../assets/images/wroom-wordmark-white-transparent.png");
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<Mode>("in");
   const [name, setName] = useState("");
@@ -52,8 +60,13 @@ export default function AuthScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.tag, { color: t.accent }]}>✦ A tool for fiction</Text>
-        <Text style={[styles.title, { color: t.ink }]}>Writer's Room</Text>
+        <Text style={[styles.tag, { color: t.accent }]}>✦ A home for writers</Text>
+        <Image
+          source={wordmark}
+          style={styles.logo}
+          contentFit="contain"
+          accessibilityLabel="wroom"
+        />
         <Text style={[styles.lede, { color: t.ink2 }]}>
           Run a room of invented characters. Step into one at a time. Write each persona as if you
           were becoming someone.
@@ -133,8 +146,7 @@ export default function AuthScreen() {
         </View>
 
         <Text style={[styles.fine, { color: t.ink3 }]}>
-          Your room is private to your account and synced securely so you can pick it up on any
-          device. Writer's Room is for authoring fiction — every character is invented and every
+          Writer's Room is for authoring fiction — every character is invented and every
           post is make-believe.
         </Text>
       </ScrollView>
@@ -166,7 +178,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   scroll: { paddingHorizontal: space[4], maxWidth: 480, width: "100%", alignSelf: "center" },
   tag: { fontSize: type.sm, fontWeight: "600", marginBottom: space[3] },
-  title: { fontFamily: fonts.serif, fontSize: type.display, fontWeight: "700" },
+  logo: { width: 200, aspectRatio: 1175 / 265, alignSelf: "flex-start", marginBottom: space[2] },
   lede: { fontFamily: fonts.serif, fontSize: type.lg, lineHeight: type.lg * 1.4, marginTop: space[2] },
   card: {
     marginTop: space[6],

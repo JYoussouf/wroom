@@ -4,7 +4,7 @@
     "slug": "wroom",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/wroom-icon-cream.png",
     "scheme": "wroom",
     "userInterfaceStyle": "automatic",
     "extra": {
@@ -32,10 +32,13 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+          "backgroundColor": "#faf8f5",
+          "image": "./assets/images/wroom-wordmark-black-dot-transparent.png",
+          "imageWidth": 240,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#0c0a09",
+            "image": "./assets/images/wroom-wordmark-white-transparent.png"
           }
         }
       ],
