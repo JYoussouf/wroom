@@ -54,7 +54,7 @@ export default function ShareScreen() {
     const text =
       `${c.displayName} (@${c.handle}) — a fictional character\n\n` +
       posts.map((p) => p.body).join("\n\n") +
-      `\n\n— Fictional content created in Writer's Room.`;
+      `\n\n— Fictional content created in wroom.`;
     await Clipboard.setStringAsync(text);
     showToast("Copied to clipboard ✦");
   }
@@ -120,7 +120,7 @@ export default function ShareScreen() {
             {posts.length > 3 && <Text style={[styles.more, { color: t.ink3 }]}>+{posts.length - 3} more in the export</Text>}
           </View>
           <View style={[styles.watermark, { backgroundColor: t.ink }]}>
-            <Text style={[styles.watermarkText, { color: t.bg }]}>✦ Fictional content — created in Writer's Room</Text>
+            <Text style={[styles.watermarkText, { color: t.bg }]}>✦ Fictional content — created in wroom</Text>
           </View>
         </View>
 

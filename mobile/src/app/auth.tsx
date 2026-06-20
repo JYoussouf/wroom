@@ -145,7 +145,7 @@ export default function AuthScreen() {
         </View>
 
         <Text style={[styles.fine, { color: t.ink3 }]}>
-          Writer's Room is for authoring fiction
+          wroom is for authoring fiction
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

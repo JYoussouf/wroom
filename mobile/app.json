@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Writer's Room",
+    "name": "wroom",
     "slug": "wroom",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,14 +8,18 @@
     "scheme": "wroom",
     "userInterfaceStyle": "automatic",
     "extra": {
-      "apiBaseUrl": "https://wroom-api.joseppy-workers.workers.dev"
+      "apiBaseUrl": "https://wroom-api.joseppy-workers.workers.dev",
+      "router": {},
+      "eas": {
+        "projectId": "82e44798-a33d-4d3f-9cac-bb5023959994"
+      }
     },
     "ios": {
       "bundleIdentifier": "io.wroom.app",
       "supportsTablet": true,
       "icon": "./assets/images/wroom-icon-ios.png",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Writer's Room uses your photo library so you can set avatars and banners for your characters.",
+        "NSPhotoLibraryUsageDescription": "wroom uses your photo library so you can set avatars and banners for your characters.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -59,6 +63,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "owner": "joseppy",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/82e44798-a33d-4d3f-9cac-bb5023959994"
     }
   }
 }

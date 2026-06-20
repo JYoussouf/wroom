@@ -95,7 +95,7 @@ export default function SettingsScreen() {
     }
     const { granted } = await registerForPush();
     setNotif({ push: granted });
-    if (!granted) showToast("Enable notifications for Writer's Room in Settings");
+    if (!granted) showToast("Enable notifications for wroom in Settings");
   }
 
   async function doChangeEmail() {
@@ -328,7 +328,7 @@ export default function SettingsScreen() {
       {/* About */}
       <Group title="About" t={t}>
         <Text style={[styles.about, { color: t.ink2 }]}>
-          ✦ Writer's Room is a tool for authoring fiction. Every character is invented and every post
+          ✦ wroom is a tool for authoring fiction. Every character is invented and every post
           is make-believe — a writer's craft, never a real or affiliated account.
         </Text>
         <RowBtn label="Log out" icon="log-out" t={t} onPress={confirmLogout} />
