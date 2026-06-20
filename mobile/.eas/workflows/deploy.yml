@@ -1,0 +1,60 @@
+# Auto-deploy on push to main.
+#
+# How it decides build-vs-OTA: a `fingerprint` job hashes the native layer
+# (app.json, native deps, SDK). `get-build` checks whether a production build
+# already exists for that hash.
+#   - hash already built  -> native is unchanged -> publish a JS-only OTA update
+#   - no build for hash   -> native changed      -> build + submit to TestFlight
+#
+# Submit runs non-interactively using the App Store Connect API key stored on
+# EAS servers (created during the first manual `eas submit`).
+#
+# Skip a run by putting [eas skip] in the commit message.
+
+name: Deploy to TestFlight
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  fingerprint:
+    name: Fingerprint native layer
+    type: fingerprint
+    environment: production
+
+  get_ios_build:
+    name: Look up existing iOS build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: ios
+      profile: production
+      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
+
+  build_ios:
+    name: Build iOS (native changed)
+    needs: [get_ios_build]
+    if: ${{ !needs.get_ios_build.outputs.build_id }}
+    type: build
+    params:
+      platform: ios
+      profile: production
+
+  submit_ios:
+    name: Submit to TestFlight
+    needs: [build_ios]
+    type: submit
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}
+      profile: production
+
+  publish_update:
+    name: Publish OTA update (JS only)
+    needs: [get_ios_build]
+    if: ${{ needs.get_ios_build.outputs.build_id }}
+    type: update
+    params:
+      platform: ios
+      branch: production
+      message: ${{ github.event.head_commit.message }}
