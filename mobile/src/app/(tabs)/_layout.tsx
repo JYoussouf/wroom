@@ -15,7 +15,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="room">
-        <NativeTabs.Trigger.Label>Room</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Wroom</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="person.2" md="groups" />
       </NativeTabs.Trigger>
 

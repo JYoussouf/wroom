@@ -140,12 +140,12 @@ export default function AuthScreen() {
           </Pressable>
 
           <Pressable onPress={enterDemo} disabled={busy} style={styles.ghost}>
-            <Text style={[styles.ghostText, { color: t.ink2 }]}>Explore the demo room →</Text>
+            <Text style={[styles.ghostText, { color: t.ink2 }]}>Explore the demo wroom →</Text>
           </Pressable>
         </View>
 
         <Text style={[styles.fine, { color: t.ink3 }]}>
-          Writer's Room is for authoring fiction.
+          Writer's Room is for authoring fiction
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

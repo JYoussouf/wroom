@@ -94,18 +94,18 @@ export default function SettingsScreen() {
 
   async function doExport() {
     try {
-      const name = `writers-room-export.json`;
+      const name = `wroom-export.json`;
       const file = new File(Paths.cache, name);
       if (file.exists) file.delete();
       file.create();
       file.write(exportRoom());
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(file.uri, { mimeType: "application/json", dialogTitle: "Export your room" });
+        await Sharing.shareAsync(file.uri, { mimeType: "application/json", dialogTitle: "Export your wroom" });
       } else {
         showToast("Sharing isn't available here");
       }
     } catch {
-      showToast("Couldn't export your room");
+      showToast("Couldn't export your wroom");
     }
   }
 
@@ -116,7 +116,7 @@ export default function SettingsScreen() {
       const file = new File(res.assets[0].uri);
       const text = file.textSync();
       const result = importRoom(text);
-      showToast(result.ok ? "Room imported ✦" : result.error);
+      showToast(result.ok ? "Wroom imported ✦" : result.error);
       if (result.ok) router.replace("/(tabs)/room");
     } catch {
       showToast("Couldn't read that file");
@@ -124,9 +124,9 @@ export default function SettingsScreen() {
   }
 
   function confirmReseed() {
-    Alert.alert("Reload the demo room?", "This replaces your current room with the example 'Lamplight' room. Export first to keep your work.", [
+    Alert.alert("Reload the demo wroom?", "This replaces your current wroom with the example 'Lamplight' wroom. Export first to keep your work.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Reload demo", style: "destructive", onPress: () => { reseedDemo(); router.replace("/(tabs)/room"); showToast("Demo room loaded"); } },
+      { text: "Reload demo", style: "destructive", onPress: () => { reseedDemo(); router.replace("/(tabs)/room"); showToast("Demo wroom loaded"); } },
     ]);
   }
 
@@ -140,19 +140,19 @@ export default function SettingsScreen() {
   function confirmReset() {
     Alert.alert("Clear everything?", "Every character, post, and follow will be permanently deleted. This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Clear everything", style: "destructive", onPress: () => { resetEverything(); router.replace("/(tabs)/room"); showToast("Your room is empty"); } },
+      { text: "Clear everything", style: "destructive", onPress: () => { resetEverything(); router.replace("/(tabs)/room"); showToast("Your wroom is empty"); } },
     ]);
   }
 
   function confirmDeleteAccount() {
-    Alert.alert("Delete your account?", "Your account and your entire room will be permanently deleted. This cannot be undone.", [
+    Alert.alert("Delete your account?", "Your account and your entire wroom will be permanently deleted. This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       { text: "Delete account", style: "destructive", onPress: deleteAccount },
     ]);
   }
 
   function confirmLogout() {
-    Alert.alert("Log out", "You can sign back in anytime to pick up your room.", [
+    Alert.alert("Log out", "You can sign back in anytime to pick up your wroom.", [
       { text: "Cancel", style: "cancel" },
       { text: "Log out", style: "destructive", onPress: logOut },
     ]);
@@ -245,9 +245,9 @@ export default function SettingsScreen() {
 
       {/* Data */}
       <Group title="Data" t={t}>
-        <RowBtn label="Export room as JSON" icon="upload" t={t} onPress={doExport} />
-        <RowBtn label="Import a room" icon="download" t={t} onPress={doImport} />
-        <RowBtn label="Reload the demo room" icon="refresh-cw" t={t} onPress={confirmReseed} />
+        <RowBtn label="Export wroom as JSON" icon="upload" t={t} onPress={doExport} />
+        <RowBtn label="Import a wroom" icon="download" t={t} onPress={doImport} />
+        <RowBtn label="Reload the demo wroom" icon="refresh-cw" t={t} onPress={confirmReseed} />
         {myCharacters.length > 0 && (
           <>
             <Text style={[styles.sectionLabel, { color: t.ink3 }]}>Delete a character</Text>

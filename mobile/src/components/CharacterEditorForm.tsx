@@ -180,7 +180,7 @@ export function CharacterEditorForm({ editId }: { editId?: string }) {
             />
           </View>
           <Text style={[styles.hint, { color: handleTaken ? t.danger : t.ink3 }]}>
-            {handleTaken ? `Another account already uses @${normalized}.` : "Unique within your room. Letters, numbers, . and _"}
+            {handleTaken ? `Another account already uses @${normalized}.` : "Unique within your wroom. Letters, numbers, . and _"}
           </Text>
         </View>
 

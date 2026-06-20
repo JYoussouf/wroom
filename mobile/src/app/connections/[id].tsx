@@ -78,7 +78,7 @@ export default function ConnectionsScreen() {
               </View>
               {discover.length === 0 ? (
                 <Text style={[styles.empty, { color: t.ink3 }]}>
-                  {name} already follows everyone in your room. Sketch a world account to widen their world.
+                  {name} already follows everyone in your wroom. Sketch a world account to widen their world.
                 </Text>
               ) : (
                 discover.map((a) => <AccountRow key={a.id} account={a} />)

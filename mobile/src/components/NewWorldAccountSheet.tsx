@@ -107,7 +107,7 @@ export function NewWorldAccountSheet({
                 autoCorrect={false}
                 style={[styles.input, { backgroundColor: t.surface, color: t.ink, borderColor: taken ? t.danger : t.border }]}
               />
-              {taken && <Text style={[styles.err, { color: t.danger }]}>That handle is already used in your room.</Text>}
+              {taken && <Text style={[styles.err, { color: t.danger }]}>That handle is already used in your wroom.</Text>}
             </View>
 
             <Pressable

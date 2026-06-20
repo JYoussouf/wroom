@@ -25,7 +25,7 @@ export default function RoomScreen() {
         }}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={[styles.title, { color: t.ink }]}>Your room</Text>
+            <Text style={[styles.title, { color: t.ink }]}>Your wroom</Text>
             <Text style={[styles.sub, { color: t.ink2 }]}>
               {myCharacters.length} character{myCharacters.length === 1 ? "" : "s"} · step into one to write
             </Text>
