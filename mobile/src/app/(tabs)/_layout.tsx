@@ -1,28 +1,26 @@
-import { NativeTabs } from "expo-router/unstable-native-tabs";
-import { useWroomTheme } from "@/theme/theme";
+import { Tabs } from "expo-router";
 
+import { GlassTabBar } from "@/components/GlassTabBar";
+import { TabBarChromeProvider } from "@/components/TabBarChrome";
+
+/**
+ * Custom JS tab bar (replaces the native tab bar) so we can render a liquid-glass
+ * surface, a persona avatar, a notifications badge, and a scroll-driven fade.
+ * Bar order is set inside GlassTabBar; declaration order here is the route order
+ * it iterates: feed, room (your wroom), notifications, settings.
+ */
 export default function TabsLayout() {
-  const t = useWroomTheme();
   return (
-    <NativeTabs
-      backgroundColor={t.bg}
-      indicatorColor={t.surface2}
-      labelStyle={{ selected: { color: t.accent } }}
-    >
-      <NativeTabs.Trigger name="feed">
-        <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="square.stack" md="dashboard" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="room">
-        <NativeTabs.Trigger.Label>Wroom</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="person.2" md="groups" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="gearshape" md="settings" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <TabBarChromeProvider>
+      <Tabs
+        screenOptions={{ headerShown: false }}
+        tabBar={(props) => <GlassTabBar {...props} />}
+      >
+        <Tabs.Screen name="feed" />
+        <Tabs.Screen name="room" />
+        <Tabs.Screen name="notifications" />
+        <Tabs.Screen name="settings" />
+      </Tabs>
+    </TabBarChromeProvider>
   );
 }

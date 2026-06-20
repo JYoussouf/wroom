@@ -19,13 +19,26 @@ import {
   useStore,
   type CardDensity,
   type ComposerFont,
+  type NotificationPrefs,
   type Privacy,
   type SyncStatus,
   type ThemePref,
 } from "@wroom/shared";
 
 import { Avatar } from "@/components/Avatar";
+import { useTabBarScroll } from "@/components/TabBarChrome";
+import { TAB_BAR_HEIGHT } from "@/components/GlassTabBar";
+import { registerForPush } from "@/lib/push";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
+
+const DEFAULT_NOTIFS: NotificationPrefs = {
+  inApp: true,
+  push: false,
+  likes: true,
+  replies: true,
+  follows: true,
+  relationships: true,
+};
 
 const SYNC_LABEL: Record<SyncStatus, string> = {
   idle: "Local only",
@@ -56,6 +69,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const t = useWroomTheme();
+  const scroll = useTabBarScroll();
 
   const [emailDraft, setEmailDraft] = useState(currentAuthor?.email ?? "");
   const [emailPw, setEmailPw] = useState("");
@@ -66,7 +80,23 @@ export default function SettingsScreen() {
 
   if (!currentAuthor) return null;
   const s = currentAuthor.settings;
+  const notifs = s.notifications ?? DEFAULT_NOTIFS;
   const emailChanged = emailDraft.trim().toLowerCase() !== currentAuthor.email;
+
+  function setNotif(patch: Partial<NotificationPrefs>) {
+    updateSettings({ notifications: { ...notifs, ...patch } });
+  }
+
+  // Enabling push asks the OS for permission; revert + explain if declined.
+  async function setPush(on: boolean) {
+    if (!on) {
+      setNotif({ push: false });
+      return;
+    }
+    const { granted } = await registerForPush();
+    setNotif({ push: granted });
+    if (!granted) showToast("Enable notifications for Writer's Room in Settings");
+  }
 
   async function doChangeEmail() {
     if (busyEmail) return;
@@ -161,7 +191,8 @@ export default function SettingsScreen() {
   return (
     <ScrollView
       style={{ backgroundColor: t.bg }}
-      contentContainerStyle={{ paddingTop: insets.top + space[4], paddingBottom: insets.bottom + space[7], paddingHorizontal: space[4] }}
+      {...scroll}
+      contentContainerStyle={{ paddingTop: insets.top + space[4], paddingBottom: insets.bottom + TAB_BAR_HEIGHT + space[5], paddingHorizontal: space[4] }}
     >
       <View style={styles.titleRow}>
         <Text style={[styles.title, { color: t.ink }]}>Settings</Text>
@@ -236,6 +267,28 @@ export default function SettingsScreen() {
           label="Keep everything private" sub="Nothing leaves this device unless you explicitly share it." t={t}
           value={s.keepEverythingPrivate} onValueChange={(keepEverythingPrivate) => updateSettings({ keepEverythingPrivate })}
         />
+      </Group>
+
+      {/* Notifications */}
+      <Group title="Notifications" t={t}>
+        <Toggle
+          label="In-app notifications"
+          sub="Show the bell badge and the notification center."
+          t={t}
+          value={notifs.inApp}
+          onValueChange={(inApp) => setNotif({ inApp })}
+        />
+        <Toggle
+          label="Push notifications"
+          sub="Get notified on this device when you're not in the app. No email, ever."
+          t={t}
+          value={notifs.push}
+          onValueChange={setPush}
+        />
+        <Toggle label="Likes & reposts" t={t} value={notifs.likes} onValueChange={(likes) => setNotif({ likes })} />
+        <Toggle label="Replies" t={t} value={notifs.replies} onValueChange={(replies) => setNotif({ replies })} />
+        <Toggle label="New followers" t={t} value={notifs.follows} onValueChange={(follows) => setNotif({ follows })} />
+        <Toggle label="Bond requests" t={t} value={notifs.relationships} onValueChange={(relationships) => setNotif({ relationships })} />
       </Group>
 
       {/* Connections */}

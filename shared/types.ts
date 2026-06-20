@@ -10,6 +10,9 @@ export type Privacy = "private" | "shareable";
 export type ComposerFont = "serif" | "sans";
 export type CardDensity = "comfortable" | "compact";
 
+/** Kinds of activity that surface in the notification center / bell. */
+export type NotificationKind = "like" | "repost" | "reply" | "follow" | "relationship";
+
 /** Who may REPLY to a post. Visibility is unaffected — anyone not blocked can read it. */
 export type ReplyScope = "open" | "restricted";
 
@@ -23,6 +26,18 @@ export type RelationshipStatus = "pending" | "accepted";
 /** Max personas (characters) a single author may hold at once. */
 export const MAX_PERSONAS_PER_AUTHOR = 100;
 
+/** Per-author notification preferences. Email is intentionally absent —
+ *  Writer's Room never sends email. `inApp` gates the bell/badge; `push` gates
+ *  device (out-of-app) notifications; the rest toggle individual sources. */
+export interface NotificationPrefs {
+  inApp: boolean;
+  push: boolean;
+  likes: boolean;
+  replies: boolean;
+  follows: boolean;
+  relationships: boolean;
+}
+
 export interface AuthorSettings {
   theme: ThemePref;
   cardDensity: CardDensity;
@@ -34,6 +49,11 @@ export interface AuthorSettings {
   autosave: boolean;
   /** Master assurance that nothing leaves the device unless explicitly shared. */
   keepEverythingPrivate: boolean;
+  /** Notification preferences. Optional for back-compat; defaulted on load. */
+  notifications?: NotificationPrefs;
+  /** Epoch ms the author last opened the notification center. Anything newer
+   *  counts as unread. Optional/0 means "everything is unread". */
+  notificationsReadAt?: number;
 }
 
 export interface Author {
@@ -169,3 +189,23 @@ export interface WroomDB {
 export type Account =
   | (Character & { kind: "character" })
   | (WorldAccount & { kind: "world" });
+
+/** A derived activity event for the notification center. Not persisted — these
+ *  are computed from posts/follows/relationships at read time (see
+ *  `notificationsFor`). `id` is stable so lists can key/dedupe on it. */
+export interface Notification {
+  id: string;
+  kind: NotificationKind;
+  /** The character/world account that acted (liker, replier, follower, requester). */
+  actorId: string;
+  /** One of the author's characters that the action targeted. */
+  subjectCharacterId: string;
+  /** Post involved (the liked/reposted/replied-to post, or the reply itself). */
+  postId?: string;
+  /** Relationship involved, for `kind: "relationship"`. */
+  relationshipId?: string;
+  /** Best-available time. Real for replies/follows/relationships; for
+   *  likes/reposts it falls back to the target post's createdAt (the model
+   *  stores no per-like timestamp). */
+  createdAt: number;
+}

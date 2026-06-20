@@ -47,7 +47,14 @@
           }
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/wroom-icon-transparent.png",
+          "color": "#b4532a"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

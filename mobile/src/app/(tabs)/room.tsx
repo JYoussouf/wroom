@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { useStore, postCount, followerCount } from "@wroom/shared";
 
 import { Avatar } from "@/components/Avatar";
+import { useTabBarScroll } from "@/components/TabBarChrome";
+import { TAB_BAR_HEIGHT } from "@/components/GlassTabBar";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
 export default function RoomScreen() {
@@ -11,6 +13,7 @@ export default function RoomScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const t = useWroomTheme();
+  const scroll = useTabBarScroll();
   const compact = currentAuthor?.settings.cardDensity === "compact";
 
   return (
@@ -18,9 +21,10 @@ export default function RoomScreen() {
       <FlatList
         data={myCharacters}
         keyExtractor={(c) => c.id}
+        {...scroll}
         contentContainerStyle={{
           paddingTop: insets.top + space[4],
-          paddingBottom: insets.bottom + space[7],
+          paddingBottom: insets.bottom + TAB_BAR_HEIGHT + space[4],
           paddingHorizontal: space[4],
         }}
         ListHeaderComponent={

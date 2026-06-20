@@ -1,4 +1,13 @@
-import type { Account, Character, Post, WorldAccount, WroomDB } from "../types";
+import type {
+  Account,
+  Character,
+  Notification,
+  NotificationKind,
+  NotificationPrefs,
+  Post,
+  WorldAccount,
+  WroomDB,
+} from "../types";
 
 /** Resolve any account id (character or world) to a unified Account. */
 export function resolveAccount(db: WroomDB, id: string): Account | null {
@@ -140,6 +149,145 @@ export function recentActivity(
     .filter((p) => charIds.has(p.characterId))
     .sort(byNewest)
     .slice(0, limit);
+}
+
+/**
+ * Derive notification events for an author from existing data — likes/reposts,
+ * replies, new followers, and pending relationship requests targeting any of
+ * the author's characters. Newest first. No events are persisted; this is
+ * recomputed from the room blob each time.
+ *
+ * Self-actions are excluded (your own personas liking/replying to each other
+ * don't notify). `prefs`, when given, filters out disabled sources.
+ *
+ * Timestamp note: likes/reposts carry no time in the model (`likedBy` /
+ * `repostedBy` are bare id arrays), so those events are dated by the target
+ * post's `createdAt` as a proxy.
+ */
+export function notificationsFor(
+  db: WroomDB,
+  authorId: string,
+  prefs?: NotificationPrefs
+): Notification[] {
+  const myChars = db.characters.filter((c) => c.authorId === authorId);
+  const myCharIds = new Set(myChars.map((c) => c.id));
+  if (myCharIds.size === 0) return [];
+
+  const want = (kind: NotificationKind): boolean => {
+    if (!prefs) return true;
+    switch (kind) {
+      case "like":
+      case "repost":
+        return prefs.likes;
+      case "reply":
+        return prefs.replies;
+      case "follow":
+        return prefs.follows;
+      case "relationship":
+        return prefs.relationships;
+    }
+  };
+
+  const out: Notification[] = [];
+  const postById = new Map(db.posts.map((p) => [p.id, p]));
+
+  // Likes / reposts / replies against my characters' posts.
+  for (const post of db.posts) {
+    if (!myCharIds.has(post.characterId)) continue;
+
+    if (want("like")) {
+      for (const actorId of post.likedBy ?? []) {
+        if (myCharIds.has(actorId)) continue;
+        out.push({
+          id: `like:${post.id}:${actorId}`,
+          kind: "like",
+          actorId,
+          subjectCharacterId: post.characterId,
+          postId: post.id,
+          createdAt: post.createdAt,
+        });
+      }
+    }
+    if (want("repost")) {
+      for (const actorId of post.repostedBy ?? []) {
+        if (myCharIds.has(actorId)) continue;
+        out.push({
+          id: `repost:${post.id}:${actorId}`,
+          kind: "repost",
+          actorId,
+          subjectCharacterId: post.characterId,
+          postId: post.id,
+          createdAt: post.createdAt,
+        });
+      }
+    }
+  }
+
+  // Replies whose parent belongs to one of my characters.
+  if (want("reply")) {
+    for (const reply of db.posts) {
+      if (!reply.parentPostId) continue;
+      if (myCharIds.has(reply.characterId)) continue; // my own reply
+      const parent = postById.get(reply.parentPostId);
+      if (!parent || !myCharIds.has(parent.characterId)) continue;
+      out.push({
+        id: `reply:${reply.id}`,
+        kind: "reply",
+        actorId: reply.characterId,
+        subjectCharacterId: parent.characterId,
+        postId: reply.id,
+        createdAt: reply.createdAt,
+      });
+    }
+  }
+
+  // New followers of my characters.
+  if (want("follow")) {
+    for (const f of db.follows) {
+      if (!myCharIds.has(f.followeeId)) continue;
+      if (myCharIds.has(f.followerId)) continue; // my own follow
+      out.push({
+        id: `follow:${f.id}`,
+        kind: "follow",
+        actorId: f.followerId,
+        subjectCharacterId: f.followeeId,
+        createdAt: f.createdAt,
+      });
+    }
+  }
+
+  // Pending relationship requests awaiting my confirmation.
+  if (want("relationship")) {
+    for (const r of db.relationships) {
+      if (r.status !== "pending") continue;
+      if (r.requestedBy && myCharIds.has(r.requestedBy)) continue; // I asked
+      // The target is whichever side is mine.
+      const mineIsB = myCharIds.has(r.bId);
+      const mineIsA = myCharIds.has(r.aId);
+      if (!mineIsA && !mineIsB) continue;
+      const subjectCharacterId = mineIsB ? r.bId : r.aId;
+      const actorId = mineIsB ? r.aId : r.bId;
+      if (myCharIds.has(actorId)) continue;
+      out.push({
+        id: `rel:${r.id}`,
+        kind: "relationship",
+        actorId,
+        subjectCharacterId,
+        relationshipId: r.id,
+        createdAt: r.createdAt,
+      });
+    }
+  }
+
+  return out.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** Count of notifications newer than `readAt` (the unread badge number). */
+export function unreadNotificationCount(
+  notifications: Notification[],
+  readAt = 0
+): number {
+  return notifications.reduce((n, x) => (x.createdAt > readAt ? n + 1 : n), 0);
 }
 
 export function getCharacter(db: WroomDB, id: string): Character | null {

@@ -38,6 +38,15 @@ export function buildSeedDB(): WroomDB {
       composerFont: "serif",
       autosave: true,
       keepEverythingPrivate: true,
+      notifications: {
+        inApp: true,
+        push: false,
+        likes: true,
+        replies: true,
+        follows: true,
+        relationships: true,
+      },
+      notificationsReadAt: 0,
     },
     createdAt: days(30),
   };

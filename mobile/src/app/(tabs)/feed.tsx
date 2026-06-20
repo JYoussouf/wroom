@@ -6,6 +6,8 @@ import { useStore, wroomFeed, homeTimeline } from "@wroom/shared";
 
 import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
+import { useTabBarScroll } from "@/components/TabBarChrome";
+import { TAB_BAR_HEIGHT } from "@/components/GlassTabBar";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
 type Tab = "foryou" | "following";
@@ -15,6 +17,7 @@ export default function FeedScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const t = useWroomTheme();
+  const scroll = useTabBarScroll();
   const [tab, setTab] = useState<Tab>("foryou");
 
   const forYou = useMemo(
@@ -53,7 +56,8 @@ export default function FeedScreen() {
         data={posts}
         keyExtractor={(p) => p.id}
         renderItem={({ item }) => <PostCard post={item} />}
-        contentContainerStyle={{ paddingBottom: insets.bottom + space[7] }}
+        {...scroll}
+        contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_HEIGHT + space[4] }}
         ListHeaderComponent={
           <Pressable
             onPress={compose}

@@ -12,6 +12,8 @@ import type {
   Author,
   AuthorSettings,
   Character,
+  Notification,
+  NotificationPrefs,
   Post,
   WorldAccount,
   WroomDB,
@@ -19,6 +21,7 @@ import type {
 import { uid } from "../lib/id";
 import { randomAccent, accentFromSeed } from "../lib/color";
 import { api, ApiError, initApi, type RoomPayload } from "../lib/api";
+import { notificationsFor, unreadNotificationCount } from "./selectors";
 import {
   DB_VERSION,
   emptyDB,
@@ -43,6 +46,19 @@ function defaultSettings(): AuthorSettings {
     composerFont: "serif",
     autosave: true,
     keepEverythingPrivate: true,
+    notifications: defaultNotificationPrefs(),
+    notificationsReadAt: 0,
+  };
+}
+
+function defaultNotificationPrefs(): NotificationPrefs {
+  return {
+    inApp: true,
+    push: false,
+    likes: true,
+    replies: true,
+    follows: true,
+    relationships: true,
   };
 }
 
@@ -63,7 +79,11 @@ function toClientAuthor(a: {
     avatar: a.avatar,
     password: "", // server is the source of truth; never hold credentials locally
     createdAt: a.createdAt,
-    settings: { ...defaultSettings(), ...s },
+    settings: {
+      ...defaultSettings(),
+      ...s,
+      notifications: { ...defaultNotificationPrefs(), ...(s.notifications ?? {}) },
+    },
   };
 }
 
@@ -152,6 +172,14 @@ interface StoreValue {
   activeCharacter: Character | null;
   stepInto: (characterId: string) => void;
   stepOut: () => void;
+
+  // ---- notifications ----
+  /** Derived activity events for the bell + notification center, newest first. */
+  notifications: Notification[];
+  /** Unread count (0 when in-app notifications are disabled). */
+  unreadNotificationCount: number;
+  /** Mark the notification center as seen now (clears the unread badge). */
+  markNotificationsRead: () => void;
 
   // ---- characters ----
   myCharacters: Character[];
@@ -321,6 +349,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [myCharacters, activeCharacterId]
   );
 
+  // Derived notification events for the bell + notification center. Honors the
+  // author's per-source toggles; unread is anything newer than notificationsReadAt.
+  const notifications = useMemo<Notification[]>(
+    () =>
+      currentAuthor
+        ? notificationsFor(db, currentAuthor.id, currentAuthor.settings.notifications)
+        : [],
+    [db, currentAuthor]
+  );
+  const unreadCount = useMemo(
+    () =>
+      currentAuthor?.settings.notifications?.inApp === false
+        ? 0
+        : unreadNotificationCount(notifications, currentAuthor?.settings.notificationsReadAt ?? 0),
+    [notifications, currentAuthor]
+  );
+
   // ---- session / author ----
   const signUp = useCallback(
     async (name: string, email: string, password: string): Promise<Result> => {
@@ -461,6 +506,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ),
     }));
   }, []);
+
+  const markNotificationsRead = useCallback(() => {
+    updateSettings({ notificationsReadAt: Date.now() });
+  }, [updateSettings]);
 
   // ---- active character ----
   const stepInto = useCallback((characterId: string) => {
@@ -809,6 +858,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     activeCharacter,
     stepInto,
     stepOut,
+    notifications,
+    unreadNotificationCount: unreadCount,
+    markNotificationsRead,
     myCharacters,
     myWorldAccounts,
     normalizeHandle,
