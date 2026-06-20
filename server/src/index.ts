@@ -4,6 +4,7 @@ import type { Env, Variables } from "./db";
 import { auth } from "./auth";
 import { sync } from "./sync";
 import { feedback } from "./feedback";
+import { legal } from "./privacy";
 import { requireAuth } from "./middleware";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -22,6 +23,9 @@ app.use("/api/*", async (c, next) => {
 
 app.get("/", (c) => c.json({ name: "wroom-api", ok: true }));
 app.get("/health", (c) => c.json({ ok: true }));
+
+// Public legal pages (privacy policy) served as HTML — linked from the App Store.
+app.route("/", legal);
 
 app.route("/api/auth", auth);
 

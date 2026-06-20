@@ -14,12 +14,12 @@ migrations_dir = "migrations"
 
 # Serve the built web app (../dist) from this same Worker, so the app and API
 # share one origin — the session cookie (SameSite=Lax) then works with no CORS.
-# The Worker runs first only for /api/*; everything else serves static assets,
-# falling back to index.html for client-side routes (SPA).
+# The Worker runs first for /api/* and the public /privacy page; everything else
+# serves static assets, falling back to index.html for client-side routes (SPA).
 [assets]
 directory = "../dist"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*"]
+run_worker_first = ["/api/*", "/privacy"]
 
 [vars]
 # Comma-separated list of origins allowed to call the API with credentials.
