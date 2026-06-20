@@ -68,8 +68,7 @@ export default function AuthScreen() {
           accessibilityLabel="wroom"
         />
         <Text style={[styles.lede, { color: t.ink2 }]}>
-          Run a room of invented characters. Step into one at a time. Write each persona as if you
-          were becoming someone.
+          Create your world, play your part
         </Text>
 
         <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
@@ -146,8 +145,7 @@ export default function AuthScreen() {
         </View>
 
         <Text style={[styles.fine, { color: t.ink3 }]}>
-          Writer's Room is for authoring fiction — every character is invented and every
-          post is make-believe.
+          Writer's Room is for authoring fiction.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
