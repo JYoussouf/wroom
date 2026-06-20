@@ -22,7 +22,7 @@ import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
 export default function ProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { db, activeCharacterId, isFollowing, toggleFollow } = useStore();
+  const { db, activeCharacterId, isFollowing, toggleFollow, stepInto, stepOut } = useStore();
   const router = useRouter();
   const t = useWroomTheme();
   const [tab, setTab] = useState<"posts" | "replies">("posts");
@@ -67,6 +67,21 @@ export default function ProfileScreen() {
             <Avatar name={name} src={acc.avatar} accent={accent} size={84} />
           </View>
           <View style={styles.actions}>
+            {isMineToEdit && (
+              <Pressable
+                onPress={() => (isSelf ? stepOut() : stepInto(id))}
+                style={[
+                  styles.stepBtn,
+                  isSelf
+                    ? { backgroundColor: accent }
+                    : { borderColor: t.border, borderWidth: StyleSheet.hairlineWidth },
+                ]}
+              >
+                <Text style={[styles.stepText, { color: isSelf ? "#fff" : t.ink }]}>
+                  {isSelf ? "Stepped in" : "Step in"}
+                </Text>
+              </Pressable>
+            )}
             {isMineToEdit && (
               <SmallBtn label="Edit" t={t} onPress={() => router.push(`/character/edit/${id}`)} />
             )}
@@ -212,6 +227,8 @@ const styles = StyleSheet.create({
   smallBtnText: { fontSize: type.sm, fontWeight: "500" },
   followBtn: { borderRadius: radius.pill, paddingHorizontal: space[4], paddingVertical: space[2] },
   followText: { fontSize: type.sm, fontWeight: "600" },
+  stepBtn: { borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: space[2] },
+  stepText: { fontSize: type.sm, fontWeight: "600" },
   nameRow: { flexDirection: "row", alignItems: "center", gap: space[2], marginTop: space[2] },
   name: { fontFamily: fonts.serif, fontSize: type.xxl, fontWeight: "700" },
   handle: { fontSize: type.base },

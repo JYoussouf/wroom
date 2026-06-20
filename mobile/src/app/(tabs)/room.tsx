@@ -7,10 +7,11 @@ import { Avatar } from "@/components/Avatar";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
 export default function RoomScreen() {
-  const { db, myCharacters, activeCharacterId, stepInto, stepOut } = useStore();
+  const { db, currentAuthor, myCharacters, activeCharacterId, stepInto, stepOut } = useStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const t = useWroomTheme();
+  const compact = currentAuthor?.settings.cardDensity === "compact";
 
   return (
     <View style={[styles.fill, { backgroundColor: t.bg }]}>
@@ -34,9 +35,10 @@ export default function RoomScreen() {
           const active = item.id === activeCharacterId;
           return (
             <Pressable
-              onPress={() => (active ? stepOut() : stepInto(item.id))}
+              onPress={() => router.push(`/profile/${item.id}`)}
               style={({ pressed }) => [
                 styles.card,
+                compact && styles.cardCompact,
                 {
                   backgroundColor: pressed ? t.surface2 : t.surface,
                   borderColor: active ? item.accentColor : t.border,
@@ -44,7 +46,7 @@ export default function RoomScreen() {
                 },
               ]}
             >
-              <Avatar name={item.displayName} src={item.avatar} accent={item.accentColor} size={48} />
+              <Avatar name={item.displayName} src={item.avatar} accent={item.accentColor} size={compact ? 38 : 48} />
               <View style={styles.cardMain}>
                 <Text style={[styles.name, { color: t.ink }]} numberOfLines={1}>
                   {item.displayName}
@@ -52,15 +54,26 @@ export default function RoomScreen() {
                 <Text style={[styles.meta, { color: t.ink3 }]} numberOfLines={1}>
                   @{item.handle} · {postCount(db, item.id)} posts · {followerCount(db, item.id)} followers
                 </Text>
-                {!!item.voiceNote && (
+                {!compact && !!item.voiceNote && (
                   <Text style={[styles.voice, { color: t.ink2 }]} numberOfLines={1}>
                     {item.voiceNote}
                   </Text>
                 )}
               </View>
-              <Text style={[styles.step, { color: active ? item.accentColor : t.ink3 }]}>
-                {active ? "Stepped in" : "Step in"}
-              </Text>
+              <Pressable
+                onPress={() => (active ? stepOut() : stepInto(item.id))}
+                hitSlop={8}
+                style={[
+                  styles.stepBtn,
+                  active
+                    ? { backgroundColor: item.accentColor }
+                    : { borderColor: t.border, borderWidth: StyleSheet.hairlineWidth },
+                ]}
+              >
+                <Text style={[styles.step, { color: active ? "#fff" : t.ink2 }]}>
+                  {active ? "Stepped in" : "Step in"}
+                </Text>
+              </Pressable>
             </Pressable>
           );
         }}
@@ -90,10 +103,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     marginBottom: space[3],
   },
+  cardCompact: { paddingVertical: space[2], marginBottom: space[2] },
   cardMain: { flex: 1, gap: 1 },
   name: { fontFamily: fonts.serif, fontSize: type.lg, fontWeight: "600" },
   meta: { fontSize: type.xs },
   voice: { fontSize: type.sm, fontStyle: "italic", marginTop: space[1] },
+  stepBtn: { borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: space[2] },
   step: { fontSize: type.xs, fontWeight: "600" },
   newBtn: {
     borderWidth: StyleSheet.hairlineWidth,
