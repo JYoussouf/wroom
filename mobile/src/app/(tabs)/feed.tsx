@@ -2,15 +2,34 @@ import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import type { Post } from "@wroom/shared";
 import { useStore, wroomFeed, homeTimeline } from "@wroom/shared";
 
 import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
+import { FeedAd } from "@/components/FeedAd";
 import { useTabBarScroll } from "@/components/TabBarChrome";
 import { TAB_BAR_HEIGHT } from "@/components/GlassTabBar";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
 type Tab = "foryou" | "following";
+
+/** A sponsored slot is inserted after every Nth post. */
+const AD_EVERY = 6;
+
+type FeedRow =
+  | { kind: "post"; key: string; post: Post }
+  | { kind: "ad"; key: string };
+
+/** Interleave sponsored slots into the post list at a fixed cadence. */
+function withAds(posts: Post[]): FeedRow[] {
+  const rows: FeedRow[] = [];
+  posts.forEach((post, i) => {
+    rows.push({ kind: "post", key: post.id, post });
+    if ((i + 1) % AD_EVERY === 0) rows.push({ kind: "ad", key: `ad-${i}` });
+  });
+  return rows;
+}
 
 export default function FeedScreen() {
   const { db, currentAuthor, activeCharacter, myCharacters } = useStore();
@@ -29,6 +48,7 @@ export default function FeedScreen() {
     [db, activeCharacter]
   );
   const posts = tab === "foryou" ? forYou : following;
+  const rows = useMemo(() => withAds(posts), [posts]);
 
   function compose() {
     if (activeCharacter) router.push("/compose");
@@ -53,9 +73,11 @@ export default function FeedScreen() {
       </View>
 
       <FlatList
-        data={posts}
-        keyExtractor={(p) => p.id}
-        renderItem={({ item }) => <PostCard post={item} />}
+        data={rows}
+        keyExtractor={(row) => row.key}
+        renderItem={({ item }) =>
+          item.kind === "ad" ? <FeedAd /> : <PostCard post={item.post} />
+        }
         {...scroll}
         contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_HEIGHT + space[4] }}
         ListHeaderComponent={

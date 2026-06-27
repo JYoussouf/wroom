@@ -10,6 +10,7 @@ import { StoreProvider, useStore } from "@wroom/shared";
 
 import { Toast } from "@/components/Toast";
 import { useWroomTheme } from "@/theme/theme";
+import { initAds } from "@/config/ads";
 
 /**
  * Keep the visible route in sync with auth state: unauthenticated authors are
@@ -37,6 +38,12 @@ function RootNavigator() {
   useAuthGate();
   const scheme = useColorScheme();
   const t = useWroomTheme();
+
+  // Initialize AdMob once at boot (requests App Tracking Transparency on iOS,
+  // then starts the ads SDK). Never blocks or crashes the UI if it fails.
+  useEffect(() => {
+    initAds();
+  }, []);
 
   return (
     <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>
