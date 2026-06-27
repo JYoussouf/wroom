@@ -107,3 +107,46 @@ legal.get("/privacy", (c) =>
     )
   )
 );
+
+legal.get("/delete-account", (c) =>
+  c.html(
+    page(
+      "Delete your account",
+      `
+  <div class="tag">✦ Fiction studio</div>
+  <h1>Delete your wroom account</h1>
+  <p class="muted">How to delete your account and data from wroom</p>
+
+  <p>You can permanently delete your wroom account and all of its data at any
+  time, directly inside the app. No request or waiting period is required.</p>
+
+  <h2>Steps</h2>
+  <ul>
+    <li>Open the <strong>wroom</strong> app and sign in.</li>
+    <li>Go to the <strong>Settings</strong> tab.</li>
+    <li>Tap <strong>“Delete my account”</strong>.</li>
+    <li>Confirm. Your account and all associated data are deleted immediately.</li>
+  </ul>
+
+  <h2>What is deleted</h2>
+  <p>Deleting your account permanently removes <strong>all</strong> data
+  associated with it, including:</p>
+  <ul>
+    <li>Your account (email address and username).</li>
+    <li>Every character, world account, post, reply, follow, and relationship in
+      your room.</li>
+    <li>Any images (avatars or banners) you added.</li>
+  </ul>
+  <p>This action is immediate and cannot be undone. We do not retain a backup of
+  your content after deletion. (Feedback you previously chose to send to our
+  public GitHub issue tracker is separate from your account and is not removed
+  automatically — contact us to have it deleted.)</p>
+
+  <h2>No longer have the app?</h2>
+  <p>If you can’t access the app, email
+  <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a> from your account’s email
+  address and we will delete your account and all associated data for you.</p>
+`
+    )
+  )
+);
