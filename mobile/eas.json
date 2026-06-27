@@ -30,6 +30,7 @@
         "appleTeamId": "T7W52GCBM2"
       },
       "android": {
+        "serviceAccountKeyPath": "../play-service-account.json",
         "track": "internal"
       }
     }
