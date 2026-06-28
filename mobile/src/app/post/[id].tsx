@@ -19,7 +19,8 @@ import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { db, activeCharacterId, toggleLike, toggleRepost, deletePost, myCharacters } = useStore();
+  const { db, activeCharacterId, toggleLike, toggleRepost, deletePost, myCharacters, showToast } =
+    useStore();
   const router = useRouter();
   const t = useWroomTheme();
 
@@ -119,20 +120,32 @@ export default function PostDetailScreen() {
               icon="message-circle"
               label="Reply"
               color={t.ink2}
-              disabled={!activeCharacterId}
-              onPress={() => router.push(`/compose?replyTo=${post.id}`)}
+              dimmed={!activeCharacterId}
+              onPress={() =>
+                activeCharacterId
+                  ? router.push(`/compose?replyTo=${post.id}`)
+                  : showToast("Step into a character to react")
+              }
             />
             <FocusAction
               icon="repeat"
               color={reposted ? "#3fa66a" : t.ink2}
-              disabled={!activeCharacterId}
-              onPress={() => activeCharacterId && toggleRepost(post.id, activeCharacterId)}
+              dimmed={!activeCharacterId}
+              onPress={() =>
+                activeCharacterId
+                  ? toggleRepost(post.id, activeCharacterId)
+                  : showToast("Step into a character to react")
+              }
             />
             <FocusAction
               icon="heart"
               color={liked ? t.danger : t.ink2}
-              disabled={!activeCharacterId}
-              onPress={() => activeCharacterId && toggleLike(post.id, activeCharacterId)}
+              dimmed={!activeCharacterId}
+              onPress={() =>
+                activeCharacterId
+                  ? toggleLike(post.id, activeCharacterId)
+                  : showToast("Step into a character to react")
+              }
             />
           </View>
         </View>
@@ -167,21 +180,20 @@ function FocusAction({
   icon,
   label,
   color,
-  disabled,
+  dimmed,
   onPress,
 }: {
   icon: keyof typeof Feather.glyphMap;
   label?: string;
   color: string;
-  disabled?: boolean;
+  dimmed?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
       hitSlop={8}
-      style={({ pressed }) => [styles.focusAction, { opacity: disabled ? 0.4 : pressed ? 0.6 : 1 }]}
+      style={({ pressed }) => [styles.focusAction, { opacity: dimmed ? 0.4 : pressed ? 0.6 : 1 }]}
     >
       <Feather name={icon} size={20} color={color} />
       {label && <Text style={[styles.focusActionLabel, { color }]}>{label}</Text>}

@@ -20,7 +20,7 @@ const COLLAPSED_LINES = 12;
 
 /** A single post, rendered with the editorial serif used for writing. */
 export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
-  const { db, activeCharacterId, toggleLike, toggleRepost, flashPostId } = useStore();
+  const { db, activeCharacterId, toggleLike, toggleRepost, flashPostId, showToast } = useStore();
   const router = useRouter();
   const t = useWroomTheme();
   const author = resolveAccount(db, post.characterId);
@@ -107,16 +107,24 @@ export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
             icon="repeat"
             count={post.repostedBy.length}
             color={reposted ? "#3fa66a" : t.ink3}
-            disabled={!activeCharacterId}
-            onPress={() => activeCharacterId && toggleRepost(post.id, activeCharacterId)}
+            dimmed={!activeCharacterId}
+            onPress={() =>
+              activeCharacterId
+                ? toggleRepost(post.id, activeCharacterId)
+                : showToast("Step into a character to react")
+            }
           />
           <Action
             icon="heart"
             count={post.likedBy.length}
             color={liked ? t.danger : t.ink3}
             fill={liked}
-            disabled={!activeCharacterId}
-            onPress={() => activeCharacterId && toggleLike(post.id, activeCharacterId)}
+            dimmed={!activeCharacterId}
+            onPress={() =>
+              activeCharacterId
+                ? toggleLike(post.id, activeCharacterId)
+                : showToast("Step into a character to react")
+            }
           />
         </View>
       </View>
@@ -129,22 +137,21 @@ function Action({
   count,
   color,
   fill,
-  disabled,
+  dimmed,
   onPress,
 }: {
   icon: keyof typeof Feather.glyphMap;
   count: number;
   color: string;
   fill?: boolean;
-  disabled?: boolean;
+  dimmed?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
       hitSlop={8}
-      style={({ pressed }) => [styles.action, { opacity: disabled ? 0.45 : pressed ? 0.6 : 1 }]}
+      style={({ pressed }) => [styles.action, { opacity: dimmed ? 0.45 : pressed ? 0.6 : 1 }]}
     >
       <Feather name={icon} size={17} color={color} style={fill ? undefined : undefined} />
       {count > 0 && <Text style={[styles.count, { color }]}>{count}</Text>}
