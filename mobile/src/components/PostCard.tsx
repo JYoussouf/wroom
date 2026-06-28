@@ -18,6 +18,15 @@ interface Props {
 /** Posts longer than this collapse behind a "Show more" toggle in feeds. */
 const COLLAPSED_LINES = 12;
 
+/**
+ * Caches the measured "does this body overflow COLLAPSED_LINES" decision per
+ * post.id. Rows are recycled in the virtualized FlatList, so without this a
+ * post re-runs its one-shot measuring pass every time it scrolls back into
+ * view — producing a visible height pop. This is a render-perf cache, not app
+ * state, so a module-level Map is acceptable.
+ */
+const overflowCache = new Map<string, boolean>();
+
 /** A single post, rendered with the editorial serif used for writing. */
 export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
   const { db, activeCharacterId, toggleLike, toggleRepost, flashPostId, showToast } = useStore();
@@ -35,15 +44,20 @@ export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
 
   // Collapse long bodies in the feed; `needsToggle === null` is the one-shot
   // measuring pass that decides whether the post overflows COLLAPSED_LINES.
+  // Seed from the per-id cache so already-measured posts (e.g. recycled rows
+  // scrolling back in) render at their final clamp on first paint — no
+  // re-measure, no height pop. `expanded` stays per-mount.
   const [expanded, setExpanded] = useState(false);
-  const [needsToggle, setNeedsToggle] = useState<boolean | null>(null);
+  const [needsToggle, setNeedsToggle] = useState<boolean | null>(
+    () => overflowCache.get(post.id) ?? null
+  );
   const onTextLayout = useCallback(
     (e: NativeSyntheticEvent<TextLayoutEventData>) => {
-      setNeedsToggle((prev) =>
-        prev === null ? e.nativeEvent.lines.length > COLLAPSED_LINES : prev
-      );
+      const overflows = e.nativeEvent.lines.length > COLLAPSED_LINES;
+      overflowCache.set(post.id, overflows);
+      setNeedsToggle((prev) => (prev === null ? overflows : prev));
     },
-    []
+    [post.id]
   );
 
   return (
