@@ -83,7 +83,7 @@ export default function NotificationsScreen() {
                   accent={actor?.accentColor ?? t.accent}
                   size={40}
                 />
-                <View style={[styles.kindBadge, { backgroundColor: t.surface, borderColor: t.bg }]}>
+                <View style={[styles.kindBadge, { backgroundColor: t.surface, borderColor: t.border }]}>
                   <Feather name={ICON[item.kind]} size={11} color={t.accent} />
                 </View>
               </View>
