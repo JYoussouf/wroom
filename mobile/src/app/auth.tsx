@@ -36,8 +36,14 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const canSubmit =
+    !!email.trim() &&
+    /.+@.+\..+/.test(email.trim()) &&
+    !!password &&
+    (mode === "in" || !!name.trim());
+
   async function submit() {
-    if (busy) return;
+    if (busy || !canSubmit) return;
     setError(null);
     setBusy(true);
     try {
@@ -124,10 +130,13 @@ export default function AuthScreen() {
 
           <Pressable
             onPress={submit}
-            disabled={busy}
+            disabled={!canSubmit || busy}
             style={({ pressed }) => [
               styles.primary,
-              { backgroundColor: t.accent, opacity: busy ? 0.7 : pressed ? 0.85 : 1 },
+              {
+                backgroundColor: t.accent,
+                opacity: !canSubmit ? 0.4 : busy ? 0.7 : pressed ? 0.85 : 1,
+              },
             ]}
           >
             {busy ? (
