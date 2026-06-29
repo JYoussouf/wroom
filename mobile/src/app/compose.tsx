@@ -222,21 +222,30 @@ export default function ComposeScreen() {
           <Pressable
             onPress={() => applyFormat("**", "**")}
             accessibilityLabel="Bold"
-            style={[styles.fmtBtn, { borderColor: t.border }]}
+            style={({ pressed }) => [
+              styles.fmtBtn,
+              { borderColor: t.border, backgroundColor: pressed ? t.surface2 : "transparent" },
+            ]}
           >
             <Text style={[styles.fmtGlyph, { color: t.ink, fontWeight: "800" }]}>B</Text>
           </Pressable>
           <Pressable
             onPress={() => applyFormat("*", "*")}
             accessibilityLabel="Italic"
-            style={[styles.fmtBtn, { borderColor: t.border }]}
+            style={({ pressed }) => [
+              styles.fmtBtn,
+              { borderColor: t.border, backgroundColor: pressed ? t.surface2 : "transparent" },
+            ]}
           >
             <Text style={[styles.fmtGlyph, { color: t.ink, fontStyle: "italic" }]}>I</Text>
           </Pressable>
           <Pressable
             onPress={() => applyFormat("~~", "~~")}
             accessibilityLabel="Strikethrough"
-            style={[styles.fmtBtn, { borderColor: t.border }]}
+            style={({ pressed }) => [
+              styles.fmtBtn,
+              { borderColor: t.border, backgroundColor: pressed ? t.surface2 : "transparent" },
+            ]}
           >
             <Text style={[styles.fmtGlyph, { color: t.ink, textDecorationLine: "line-through" }]}>S</Text>
           </Pressable>
@@ -300,8 +309,8 @@ const styles = StyleSheet.create({
   field: { flex: 1, fontSize: type.lg, lineHeight: type.lg * 1.4, minHeight: 120, paddingTop: space[2] },
   fmtBar: { flexDirection: "row", alignItems: "center", gap: space[2], marginTop: space[3] },
   fmtBtn: {
-    minWidth: 34,
-    height: 34,
+    minWidth: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: space[2],
