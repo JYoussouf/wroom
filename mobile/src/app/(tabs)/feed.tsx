@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import type { Post } from "@wroom/shared";
 import { useStore, wroomFeed, homeTimeline } from "@wroom/shared";
 
@@ -97,9 +98,7 @@ export default function FeedScreen() {
             <Text style={[styles.composerText, { color: t.ink3 }]} numberOfLines={1}>
               {activeCharacter ? `What's on ${composerName}'s mind?` : "Step into a character to write…"}
             </Text>
-            <View style={[styles.postBtn, { backgroundColor: t.accent }]}>
-              <Text style={[styles.postBtnText, { color: t.accentInk }]}>Post</Text>
-            </View>
+            <Feather name="edit-3" size={20} color={t.accent} />
           </Pressable>
         }
         ListEmptyComponent={
@@ -150,7 +149,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   composerText: { flex: 1, fontFamily: fonts.serif, fontSize: type.base },
-  postBtn: { paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.pill },
   postBtnText: { fontSize: type.sm, fontWeight: "600" },
   empty: { alignItems: "center", padding: space[6], gap: space[3] },
   glyph: { fontSize: 32, color: "#9a8f7f" },
