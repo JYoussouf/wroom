@@ -223,6 +223,7 @@ interface StoreValue {
   flashPost: (id: string) => void;
   toast: string | null;
   showToast: (message: string) => void;
+  dismissToast: () => void;
 
   // ---- data management ----
   exportRoom: () => string;
@@ -239,6 +240,10 @@ function obfuscate(pw: string): string {
   // server is the real source of truth for credentials. (No btoa on native.)
   return `wr:${pw}`;
 }
+
+// How long a toast stays up before auto-dismissing. Long enough to finish
+// reading an error (e.g. a failed password change); tap to dismiss early.
+const TOAST_DURATION_MS = 4000;
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [db, setDb] = useState<WroomDB>(emptyDB);
@@ -837,7 +842,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback((message: string) => {
     setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
+    toastTimer.current = setTimeout(() => setToast(null), TOAST_DURATION_MS);
+  }, []);
+
+  const dismissToast = useCallback(() => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(null);
   }, []);
 
   const value: StoreValue = {
@@ -884,6 +894,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     flashPost,
     toast,
     showToast,
+    dismissToast,
     exportRoom,
     importRoom,
     resetEverything,

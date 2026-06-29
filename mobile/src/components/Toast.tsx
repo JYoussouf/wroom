@@ -11,7 +11,7 @@ import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
  * (a failed password change) alike. Slides up from the bottom, then fades.
  */
 export function Toast() {
-  const { toast } = useStore();
+  const { toast, dismissToast } = useStore();
   const t = useWroomTheme();
   const insets = useSafeAreaInsets();
   const anim = useRef(new Animated.Value(0)).current;
@@ -40,7 +40,12 @@ export function Toast() {
         },
       ]}
     >
-      <Pressable style={[styles.toast, { backgroundColor: t.ink, shadowColor: "#000" }]}>
+      <Pressable
+        onPress={dismissToast}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss"
+        style={[styles.toast, { backgroundColor: t.ink, shadowColor: "#000" }]}
+      >
         <Text style={[styles.text, { color: t.bg }]} numberOfLines={3}>
           {toast}
         </Text>
