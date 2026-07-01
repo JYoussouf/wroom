@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -11,18 +12,25 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { useStore, getPost, resolveAccount } from "@wroom/shared";
+import type { Account } from "@wroom/shared";
+import { useStore, getPost, resolveAccount, authorAccount } from "@wroom/shared";
 
 import { Avatar } from "@/components/Avatar";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
+
+/** Display name for any poster account (author main account included). */
+function accName(acc: Account): string {
+  return acc.kind === "character" ? acc.displayName : acc.name;
+}
 
 export default function ComposeScreen() {
   const { replyTo } = useLocalSearchParams<{ replyTo?: string }>();
   const {
     db,
     currentAuthor,
-    activeCharacter,
+    activeCharacterId,
+    myCharacters,
     createPost,
     getDraft,
     setDraft,
@@ -33,13 +41,29 @@ export default function ComposeScreen() {
   const router = useRouter();
   const t = useWroomTheme();
 
-  const c = activeCharacter;
   const useSerif = currentAuthor?.settings.composerFont !== "sans";
   const autosave = currentAuthor?.settings.autosave ?? true;
 
+  // The accounts an author can post as: their own main account first, then each
+  // character. Posting defaults to the stepped-in character, else the main
+  // account — so an author can always post as themselves.
+  const posterAccounts = useMemo<Account[]>(() => {
+    const list: Account[] = [];
+    if (currentAuthor) list.push(authorAccount(currentAuthor));
+    for (const ch of myCharacters) list.push({ ...ch, kind: "character" });
+    return list;
+  }, [currentAuthor, myCharacters]);
+
+  const [posterId, setPosterId] = useState<string>(
+    () => activeCharacterId ?? currentAuthor?.id ?? ""
+  );
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const poster = resolveAccount(db, posterId);
+
   const draftKey = useMemo(
-    () => (c ? (replyTo ? `reply:${c.id}:${replyTo}` : `compose:${c.id}`) : ""),
-    [c, replyTo]
+    () => (posterId ? (replyTo ? `reply:${posterId}:${replyTo}` : `compose:${posterId}`) : ""),
+    [posterId, replyTo]
   );
 
   const [text, setText] = useState(() => (draftKey ? getDraft(draftKey) : ""));
@@ -61,7 +85,7 @@ export default function ComposeScreen() {
     setForcedSel(next);
   }
 
-  // Continuous, per-character draft autosave.
+  // Continuous, per-poster draft autosave.
   useEffect(() => {
     if (!autosave || !draftKey) return;
     const id = setTimeout(() => {
@@ -76,18 +100,38 @@ export default function ComposeScreen() {
     return () => clearTimeout(id);
   }, [text, autosave, draftKey, setDraft, clearDraft]);
 
-  if (!c) {
+  // Switch the identity we're posting as. Drafts are per-poster, so flush the
+  // current one and load the target's, and drop any in-progress thread segments
+  // (they were written in the previous persona's voice).
+  function switchPoster(nextId: string) {
+    setPickerOpen(false);
+    if (nextId === posterId) return;
+    if (autosave && draftKey) {
+      if (text.trim()) setDraft(draftKey, text);
+      else clearDraft(draftKey);
+    }
+    const nextKey = replyTo ? `reply:${nextId}:${replyTo}` : `compose:${nextId}`;
+    setText(getDraft(nextKey));
+    setSegments([]);
+    setPosterId(nextId);
+  }
+
+  if (!poster) {
     return (
       <View style={[styles.fill, { backgroundColor: t.bg }]}>
         <ScreenHeader title="Compose" close />
         <View style={styles.empty}>
           <Text style={[styles.emptyText, { color: t.ink2 }]}>
-            Step into a character to write in their voice.
+            Sign in to write.
           </Text>
         </View>
       </View>
     );
   }
+
+  const isAuthor = poster.kind === "author";
+  const posterName = accName(poster);
+  const posterFirst = posterName.split(" ")[0];
 
   const parent = replyTo ? getPost(db, replyTo) : null;
   const parentAuthor = parent ? resolveAccount(db, parent.characterId) : null;
@@ -103,13 +147,13 @@ export default function ComposeScreen() {
   }
 
   function publish() {
-    if (!canPost || !c) return;
+    if (!canPost || !posterId) return;
     const all = [...segments];
     if (hasContent) all.push(text.trim());
     if (all.length === 0) return;
 
     if (replyTo) {
-      const post = createPost({ characterId: c.id, body: all[0], parentPostId: replyTo });
+      const post = createPost({ characterId: posterId, body: all[0], parentPostId: replyTo });
       flashPost(post.id);
       clearDraft(draftKey);
       showToast("Reply posted ✦");
@@ -118,13 +162,13 @@ export default function ComposeScreen() {
     }
 
     if (all.length === 1) {
-      const post = createPost({ characterId: c.id, body: all[0] });
+      const post = createPost({ characterId: posterId, body: all[0] });
       flashPost(post.id);
     } else {
-      const root = createPost({ characterId: c.id, body: all[0] });
+      const root = createPost({ characterId: posterId, body: all[0] });
       let prev = root.id;
       for (let i = 1; i < all.length; i++) {
-        const child = createPost({ characterId: c.id, body: all[i], parentPostId: prev, threadId: root.id });
+        const child = createPost({ characterId: posterId, body: all[i], parentPostId: prev, threadId: root.id });
         prev = child.id;
       }
       flashPost(root.id);
@@ -134,11 +178,7 @@ export default function ComposeScreen() {
     router.back();
   }
 
-  const parentName = parentAuthor
-    ? parentAuthor.kind === "character"
-      ? parentAuthor.displayName
-      : parentAuthor.name
-    : "";
+  const parentName = parentAuthor ? accName(parentAuthor) : "";
 
   return (
     <KeyboardAvoidingView
@@ -165,6 +205,28 @@ export default function ComposeScreen() {
       />
 
       <ScrollView contentContainerStyle={{ padding: space[4] }} keyboardShouldPersistTaps="handled">
+        {/* "Posting as" switcher — pick the identity, including the main account. */}
+        <Pressable
+          onPress={() => posterAccounts.length > 1 && setPickerOpen(true)}
+          style={[styles.posterBar, { borderColor: t.border, backgroundColor: t.surface }]}
+        >
+          <Avatar name={posterName} src={poster.avatar} accent={poster.accentColor} size={32} />
+          <View style={styles.flex1}>
+            <Text style={[styles.posterLabel, { color: t.ink3 }]}>Posting as</Text>
+            <View style={styles.posterNameRow}>
+              <Text style={[styles.posterName, { color: t.ink }]} numberOfLines={1}>
+                {posterName}
+              </Text>
+              {isAuthor && (
+                <View style={[styles.mainTag, { borderColor: t.border }]}>
+                  <Text style={[styles.mainTagText, { color: t.ink3 }]}>main</Text>
+                </View>
+              )}
+            </View>
+          </View>
+          {posterAccounts.length > 1 && <Feather name="chevron-down" size={18} color={t.ink3} />}
+        </Pressable>
+
         {parent && parentAuthor && (
           <View style={[styles.replyContext, { borderColor: t.border }]}>
             <Avatar name={parentName} src={parentAuthor.avatar} accent={parentAuthor.accentColor} size={32} />
@@ -181,10 +243,10 @@ export default function ComposeScreen() {
 
         {segments.map((seg, i) => (
           <View key={i} style={styles.segment}>
-            <Avatar name={c.displayName} src={c.avatar} accent={c.accentColor} size={42} />
+            <Avatar name={posterName} src={poster.avatar} accent={poster.accentColor} size={42} />
             <View style={styles.flex1}>
               <View style={styles.segmentHead}>
-                <Text style={[styles.handle, { color: t.ink2 }]}>@{c.handle}</Text>
+                <Text style={[styles.handle, { color: t.ink2 }]}>@{poster.handle}</Text>
                 <Pressable onPress={() => setSegments((s) => s.filter((_, idx) => idx !== i))} hitSlop={8}>
                   <Feather name="trash-2" size={15} color={t.ink3} />
                 </Pressable>
@@ -195,7 +257,7 @@ export default function ComposeScreen() {
         ))}
 
         <View style={styles.composeRow}>
-          <Avatar name={c.displayName} src={c.avatar} accent={c.accentColor} size={42} />
+          <Avatar name={posterName} src={poster.avatar} accent={poster.accentColor} size={42} />
           <TextInput
             value={text}
             onChangeText={setText}
@@ -211,7 +273,9 @@ export default function ComposeScreen() {
                 ? "Write your reply…"
                 : isThread
                   ? "Continue the thread…"
-                  : `Say something as ${c.displayName.split(" ")[0]}…`
+                  : isAuthor
+                    ? "Share something as yourself…"
+                    : `Say something as ${posterFirst}…`
             }
             placeholderTextColor={t.ink3}
             style={[styles.field, useSerif && { fontFamily: fonts.serif }, { color: t.ink }]}
@@ -255,8 +319,9 @@ export default function ComposeScreen() {
         <View style={styles.voice}>
           <Feather name="feather" size={13} color={t.ink3} />
           <Text style={[styles.voiceText, { color: t.ink3 }]}>
-            Writing as @{c.handle}
-            {c.voiceNote ? ` — “${c.voiceNote}”` : ""}
+            {isAuthor
+              ? "Writing as yourself — your main account"
+              : `Writing as @${poster.handle}${poster.kind === "character" && poster.voiceNote ? ` — “${poster.voiceNote}”` : ""}`}
           </Text>
         </View>
 
@@ -278,6 +343,43 @@ export default function ComposeScreen() {
           Fiction — every post here is invented craft, private to you.
         </Text>
       </ScrollView>
+
+      <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setPickerOpen(false)}>
+          <Pressable style={[styles.sheet, { backgroundColor: t.bg, borderColor: t.border }]}>
+            <Text style={[styles.sheetTitle, { color: t.ink3 }]}>Post as</Text>
+            {posterAccounts.map((acc) => {
+              const selected = acc.id === posterId;
+              return (
+                <Pressable
+                  key={acc.id}
+                  onPress={() => switchPoster(acc.id)}
+                  style={({ pressed }) => [
+                    styles.sheetRow,
+                    { backgroundColor: pressed ? t.surface2 : "transparent" },
+                  ]}
+                >
+                  <Avatar name={accName(acc)} src={acc.avatar} accent={acc.accentColor} size={40} />
+                  <View style={styles.flex1}>
+                    <View style={styles.posterNameRow}>
+                      <Text style={[styles.sheetName, { color: t.ink }]} numberOfLines={1}>
+                        {accName(acc)}
+                      </Text>
+                      {acc.kind === "author" && (
+                        <View style={[styles.mainTag, { borderColor: t.border }]}>
+                          <Text style={[styles.mainTagText, { color: t.ink3 }]}>main</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.sheetHandle, { color: t.ink3 }]}>@{acc.handle}</Text>
+                  </View>
+                  {selected && <Feather name="check" size={18} color={t.accent} />}
+                </Pressable>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -291,6 +393,25 @@ const styles = StyleSheet.create({
   saved: { fontSize: type.xs },
   postBtn: { paddingHorizontal: space[4], paddingVertical: space[2], borderRadius: radius.pill },
   postBtnText: { fontSize: type.sm, fontWeight: "600" },
+  posterBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space[3],
+    padding: space[3],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.md,
+    marginBottom: space[4],
+  },
+  posterLabel: { fontSize: type.xs },
+  posterNameRow: { flexDirection: "row", alignItems: "center", gap: space[2] },
+  posterName: { fontFamily: fonts.serif, fontSize: type.base, fontWeight: "600", flexShrink: 1 },
+  mainTag: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    paddingHorizontal: space[2],
+    paddingVertical: 1,
+  },
+  mainTagText: { fontSize: type.xs, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.4 },
   replyContext: {
     flexDirection: "row",
     gap: space[2],
@@ -333,4 +454,25 @@ const styles = StyleSheet.create({
   },
   threadBtnText: { fontSize: type.sm, fontWeight: "500" },
   fiction: { fontSize: type.xs, marginTop: space[5] },
+  sheetBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.4)" },
+  sheet: {
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: space[4],
+    paddingTop: space[4],
+    paddingBottom: space[7],
+    gap: space[1],
+  },
+  sheetTitle: { fontSize: type.xs, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: space[2] },
+  sheetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space[3],
+    paddingVertical: space[3],
+    paddingHorizontal: space[2],
+    borderRadius: radius.md,
+  },
+  sheetName: { fontFamily: fonts.serif, fontSize: type.base, fontWeight: "600", flexShrink: 1 },
+  sheetHandle: { fontSize: type.sm },
 });

@@ -83,7 +83,8 @@ export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
           </Text>
           <Text style={[styles.meta, { color: t.ink3 }]} numberOfLines={1}>
             @{author.handle}
-            {author.kind === "world" ? " · world" : ""} · {relativeTime(post.createdAt)}
+            {author.kind === "world" ? " · world" : author.kind === "author" ? " · you" : ""} ·{" "}
+            {relativeTime(post.createdAt)}
           </Text>
         </View>
 

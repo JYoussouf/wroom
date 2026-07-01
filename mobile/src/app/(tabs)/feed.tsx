@@ -52,8 +52,9 @@ export default function FeedScreen() {
   const rows = useMemo(() => withAds(posts), [posts]);
 
   function compose() {
-    if (activeCharacter) router.push("/compose");
-    else router.push("/(tabs)/room");
+    // Compose defaults to the stepped-in character, or the author's main
+    // account when none is active — either way, you can always write.
+    router.push("/compose");
   }
 
   const composerName = activeCharacter?.displayName.split(" ")[0];
@@ -96,7 +97,7 @@ export default function FeedScreen() {
               size={42}
             />
             <Text style={[styles.composerText, { color: t.ink3 }]} numberOfLines={1}>
-              {activeCharacter ? `What's on ${composerName}'s mind?` : "Step into a character to write…"}
+              {activeCharacter ? `What's on ${composerName}'s mind?` : "Share something from your main account…"}
             </Text>
             <Feather name="edit-3" size={20} color={t.accent} />
           </Pressable>
@@ -116,7 +117,7 @@ export default function FeedScreen() {
             </Text>
             <Pressable onPress={compose} style={[styles.emptyBtn, { backgroundColor: t.accent }]}>
               <Text style={[styles.postBtnText, { color: t.accentInk }]}>
-                {activeCharacter ? "Write a post" : "Choose a character"}
+                Write a post
               </Text>
             </Pressable>
           </View>

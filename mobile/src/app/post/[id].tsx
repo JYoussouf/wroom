@@ -19,13 +19,17 @@ import { useWroomTheme, fonts, radius, space, type } from "@/theme/theme";
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { db, activeCharacterId, toggleLike, toggleRepost, deletePost, myCharacters, showToast } =
+  const { db, currentAuthor, activeCharacterId, toggleLike, toggleRepost, deletePost, myCharacters, showToast } =
     useStore();
   const router = useRouter();
   const t = useWroomTheme();
 
   const post = id ? getPost(db, id) : null;
-  const isMine = !!post && myCharacters.some((c) => c.id === post.characterId);
+  // Mine if posted by one of my characters or by my own main account.
+  const isMine =
+    !!post &&
+    (myCharacters.some((c) => c.id === post.characterId) ||
+      post.characterId === currentAuthor?.id);
 
   function confirmDelete() {
     if (!post) return;
@@ -120,12 +124,7 @@ export default function PostDetailScreen() {
               icon="message-circle"
               label="Reply"
               color={t.ink2}
-              dimmed={!activeCharacterId}
-              onPress={() =>
-                activeCharacterId
-                  ? router.push(`/compose?replyTo=${post.id}`)
-                  : showToast("Step into a character to react")
-              }
+              onPress={() => router.push(`/compose?replyTo=${post.id}`)}
             />
             <FocusAction
               icon="repeat"
@@ -150,17 +149,15 @@ export default function PostDetailScreen() {
           </View>
         </View>
 
-        {activeCharacterId && (
-          <Pressable
-            onPress={() => router.push(`/compose?replyTo=${post.id}`)}
-            style={[styles.replyEntry, { borderColor: t.border }]}
-          >
-            <Feather name="message-circle" size={16} color={t.ink3} />
-            <Text style={[styles.replyEntryText, { color: t.ink3 }]}>
-              Reply as the active character…
-            </Text>
-          </Pressable>
-        )}
+        <Pressable
+          onPress={() => router.push(`/compose?replyTo=${post.id}`)}
+          style={[styles.replyEntry, { borderColor: t.border }]}
+        >
+          <Feather name="message-circle" size={16} color={t.ink3} />
+          <Text style={[styles.replyEntryText, { color: t.ink3 }]}>
+            {activeCharacterId ? "Reply as the active character…" : "Reply as your main account…"}
+          </Text>
+        </Pressable>
 
         <Text style={[styles.sectionLabel, { color: t.ink3 }]}>
           {replies.length} {replies.length === 1 ? "reply" : "replies"}

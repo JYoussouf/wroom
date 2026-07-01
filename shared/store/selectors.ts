@@ -1,5 +1,6 @@
 import type {
   Account,
+  Author,
   Character,
   Notification,
   NotificationKind,
@@ -8,19 +9,60 @@ import type {
   WorldAccount,
   WroomDB,
 } from "../types";
+import { accentFromSeed } from "../lib/color";
 
-/** Resolve any account id (character or world) to a unified Account. */
+/** Standardized handle for an author's main account, derived from their name.
+ *  Same normalization the store applies to character handles; falls back to a
+ *  stable placeholder when the name has no usable characters. */
+export function authorHandle(author: Author): string {
+  const h = author.name
+    .trim()
+    .replace(/^@+/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9._]/g, "")
+    .slice(0, 24);
+  return h || "me";
+}
+
+/** The author's own "main account" as a unified Account. Handle is derived from
+ *  the name and the accent is deterministic from the id, so it stays stable
+ *  across sessions without adding stored fields to `Author`. */
+export function authorAccount(author: Author): Account {
+  return {
+    ...author,
+    kind: "author",
+    handle: authorHandle(author),
+    accentColor: accentFromSeed(author.id),
+  };
+}
+
+/** Resolve any account id (character, world, or author main account) to a
+ *  unified Account. An id matching an author resolves to their main account. */
 export function resolveAccount(db: WroomDB, id: string): Account | null {
   const c = db.characters.find((x) => x.id === id);
   if (c) return { ...c, kind: "character" };
   const w = db.worldAccounts.find((x) => x.id === id);
   if (w) return { ...w, kind: "world" };
+  const a = db.authors.find((x) => x.id === id);
+  if (a) return authorAccount(a);
   return null;
 }
 
 export function accountName(acc: Account | null): string {
   if (!acc) return "Unknown";
   return acc.kind === "character" ? acc.displayName : acc.name;
+}
+
+/** All poster ids belonging to an author's room: their characters plus the
+ *  author's own main account. A post is "in the room" when its poster
+ *  (`characterId`) is one of these. Author main-account posts have
+ *  `characterId === authorId`, so the author id itself is a valid poster id. */
+function roomPosterIds(db: WroomDB, authorId: string): Set<string> {
+  const ids = new Set(
+    db.characters.filter((c) => c.authorId === authorId).map((c) => c.id)
+  );
+  ids.add(authorId);
+  return ids;
 }
 
 /** Ids a character follows. */
@@ -71,11 +113,9 @@ export function homeTimeline(db: WroomDB, characterId: string): Post[] {
  * author's characters, newest first. A god's-eye view of your fiction world.
  */
 export function wroomFeed(db: WroomDB, authorId: string): Post[] {
-  const charIds = new Set(
-    db.characters.filter((c) => c.authorId === authorId).map((c) => c.id)
-  );
+  const posterIds = roomPosterIds(db, authorId);
   return db.posts
-    .filter((p) => !p.parentPostId && charIds.has(p.characterId))
+    .filter((p) => !p.parentPostId && posterIds.has(p.characterId))
     .sort(byNewest);
 }
 
@@ -128,9 +168,10 @@ export interface RoomStats {
 export function roomStats(db: WroomDB, authorId: string): RoomStats {
   const chars = db.characters.filter((c) => c.authorId === authorId);
   const charIds = new Set(chars.map((c) => c.id));
+  const posterIds = roomPosterIds(db, authorId);
   return {
     characters: chars.length,
-    posts: db.posts.filter((p) => charIds.has(p.characterId)).length,
+    posts: db.posts.filter((p) => posterIds.has(p.characterId)).length,
     worldAccounts: db.worldAccounts.filter((w) => w.authorId === authorId).length,
     follows: db.follows.filter((f) => charIds.has(f.followerId)).length,
   };
@@ -142,11 +183,9 @@ export function recentActivity(
   authorId: string,
   limit = 12
 ): Post[] {
-  const charIds = new Set(
-    db.characters.filter((c) => c.authorId === authorId).map((c) => c.id)
-  );
+  const posterIds = roomPosterIds(db, authorId);
   return db.posts
-    .filter((p) => charIds.has(p.characterId))
+    .filter((p) => posterIds.has(p.characterId))
     .sort(byNewest)
     .slice(0, limit);
 }
@@ -171,7 +210,13 @@ export function notificationsFor(
 ): Notification[] {
   const myChars = db.characters.filter((c) => c.authorId === authorId);
   const myCharIds = new Set(myChars.map((c) => c.id));
-  if (myCharIds.size === 0) return [];
+  // Posts that "belong to me" include the author's own main-account posts
+  // (characterId === authorId), so likes/reposts/replies against them notify.
+  // Actors are always characters, so the author id only ever matters as a subject.
+  const mineIds = new Set(myCharIds);
+  mineIds.add(authorId);
+  if (myChars.length === 0 && !db.posts.some((p) => p.characterId === authorId))
+    return [];
 
   const want = (kind: NotificationKind): boolean => {
     if (!prefs) return true;
@@ -191,9 +236,9 @@ export function notificationsFor(
   const out: Notification[] = [];
   const postById = new Map(db.posts.map((p) => [p.id, p]));
 
-  // Likes / reposts / replies against my characters' posts.
+  // Likes / reposts / replies against my characters' (and main account's) posts.
   for (const post of db.posts) {
-    if (!myCharIds.has(post.characterId)) continue;
+    if (!mineIds.has(post.characterId)) continue;
 
     if (want("like")) {
       for (const actorId of post.likedBy ?? []) {
@@ -227,9 +272,9 @@ export function notificationsFor(
   if (want("reply")) {
     for (const reply of db.posts) {
       if (!reply.parentPostId) continue;
-      if (myCharIds.has(reply.characterId)) continue; // my own reply
+      if (mineIds.has(reply.characterId)) continue; // my own reply
       const parent = postById.get(reply.parentPostId);
-      if (!parent || !myCharIds.has(parent.characterId)) continue;
+      if (!parent || !mineIds.has(parent.characterId)) continue;
       out.push({
         id: `reply:${reply.id}`,
         kind: "reply",

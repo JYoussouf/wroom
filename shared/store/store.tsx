@@ -119,7 +119,9 @@ function scopedRoom(d: WroomDB, authorId: string): RoomPayload {
   const charIds = new Set(characters.map((c) => c.id));
   const worldAccounts = d.worldAccounts.filter((w) => w.authorId === authorId);
   const follows = d.follows.filter((f) => charIds.has(f.followerId));
-  const posts = d.posts.filter((p) => charIds.has(p.characterId));
+  // Include the author's own main-account posts (characterId === authorId)
+  // alongside their characters' posts, so they aren't dropped on sync.
+  const posts = d.posts.filter((p) => charIds.has(p.characterId) || p.characterId === authorId);
   const authors = a
     ? [{ id: a.id, name: a.name, email: a.email, avatar: a.avatar, settings: a.settings, createdAt: a.createdAt }]
     : [];
@@ -695,12 +697,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       replyScope?: Post["replyScope"];
       replyAllowlist?: string[];
     }): Post => {
+      // The poster is usually a character, but may be the author's own main
+      // account (posting "as themselves"), in which case characterId is the
+      // author id and the post is attributed to that same author.
       const owner = db.characters.find((c) => c.id === input.characterId);
+      const postedAsAuthor = !owner && db.authors.some((a) => a.id === input.characterId);
       const restricted = input.replyScope === "restricted";
       const post: Post = {
         id: uid("post"),
         characterId: input.characterId,
-        authorId: owner?.authorId ?? db.session.authorId ?? "",
+        authorId: owner?.authorId ?? (postedAsAuthor ? input.characterId : db.session.authorId ?? ""),
         body: input.body,
         parentPostId: input.parentPostId,
         threadId: input.threadId,
@@ -719,7 +725,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }));
       return post;
     },
-    [db.characters, db.session.authorId]
+    [db.characters, db.authors, db.session.authorId]
   );
 
   const deletePost = useCallback((id: string) => {
@@ -826,7 +832,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         follows: d.follows.filter(
           (f) => !charIds.has(f.followerId) && !charIds.has(f.followeeId) && !worldIds.has(f.followeeId)
         ),
-        posts: d.posts.filter((p) => !charIds.has(p.characterId)),
+        posts: d.posts.filter((p) => !charIds.has(p.characterId) && p.characterId !== authorId),
         session: { authorId: null },
       };
     });

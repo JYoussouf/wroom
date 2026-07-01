@@ -108,7 +108,13 @@ export default function ProfileScreen() {
 
         <View style={styles.nameRow}>
           <Text style={[styles.name, { color: t.ink }]}>{name}</Text>
-          {acc.kind === "character" ? <PrivacyBadge privacy={acc.privacy} /> : <Pill>world account</Pill>}
+          {acc.kind === "character" ? (
+            <PrivacyBadge privacy={acc.privacy} />
+          ) : acc.kind === "author" ? (
+            <Pill>main account</Pill>
+          ) : (
+            <Pill>world account</Pill>
+          )}
         </View>
         <Text style={[styles.handle, { color: t.ink3 }]}>@{acc.handle}</Text>
 

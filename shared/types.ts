@@ -185,10 +185,16 @@ export interface WroomDB {
   session: Session;
 }
 
-/** Any account that can appear in a timeline or be followed. */
+/** Any account that can appear in a timeline or be followed.
+ *
+ *  The author's own "main account" surfaces as `kind: "author"`. Authors have a
+ *  `name` but no `handle`/`accentColor`, so those are derived (see
+ *  `authorAccount` in selectors) and attached here so every Account exposes a
+ *  `handle` and `accentColor` uniformly — consumers don't special-case it. */
 export type Account =
   | (Character & { kind: "character" })
-  | (WorldAccount & { kind: "world" });
+  | (WorldAccount & { kind: "world" })
+  | (Author & { kind: "author"; handle: string; accentColor: string });
 
 /** A derived activity event for the notification center. Not persisted — these
  *  are computed from posts/follows/relationships at read time (see
