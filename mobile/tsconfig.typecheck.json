@@ -1,0 +1,21 @@
+{
+  // Typecheck-only config. Identical to tsconfig.json but adds a `react`/`react/*`
+  // path mapping so `tsc` can resolve React's types when it checks the shared
+  // core (../shared/**), whose files live outside mobile/node_modules' reach.
+  //
+  // This mapping must NOT live in tsconfig.json: Metro also reads that file's
+  // `paths`, and pointing `react` at the types-only @types/react package breaks
+  // the runtime bundle. `paths` fully replaces (not merges) the parent's, so the
+  // other entries are repeated here. Used by `npm run typecheck`.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "@/*": ["./src/*"],
+      "@/assets/*": ["./assets/*"],
+      "@wroom/shared": ["../shared/index.ts"],
+      "@wroom/shared/*": ["../shared/*"]
+    }
+  }
+}

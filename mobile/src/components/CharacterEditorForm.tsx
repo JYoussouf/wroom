@@ -3,10 +3,12 @@ import {
   Image,
   Pressable,
   ScrollView,
+  StyleProp,
   StyleSheet,
   Text,
   TextInput,
   View,
+  ViewStyle,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -283,8 +285,8 @@ function Input({
   t: ReturnType<typeof useWroomTheme>;
   label: string;
   hint?: string;
-  style?: object;
-} & React.ComponentProps<typeof TextInput>) {
+  style?: StyleProp<ViewStyle>;
+} & Omit<React.ComponentProps<typeof TextInput>, "style">) {
   return (
     <View style={[styles.field, style]}>
       <Label t={t}>{label}</Label>
