@@ -1,12 +1,12 @@
 # dependencies
 node_modules/
 
-# server (Cloudflare Worker) — local secrets & build state
+# server (Cloudflare Worker) - local secrets & build state
 server/node_modules/
 server/.dev.vars
 server/.wrangler/
 
-# secrets — Google Play service-account key (used by eas submit)
+# secrets - Google Play service-account key (used by eas submit)
 play-service-account.json
 *service-account*.json
 *.p8
@@ -33,3 +33,7 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code - local agent state (shared settings.json is committed; ignore the rest)
+.claude/agent-memory/
+.claude/settings.local.json
