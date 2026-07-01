@@ -13,7 +13,14 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { useStore, ACCENT_PALETTE, randomAccent, type Privacy } from "@wroom/shared";
+import {
+  useStore,
+  ACCENT_PALETTE,
+  randomAccent,
+  CHARACTER_TAG_GROUPS,
+  normalizeCharacterTags,
+  type Privacy,
+} from "@wroom/shared";
 
 import { Avatar } from "@/components/Avatar";
 import { Pill, PrivacyBadge } from "@/components/Pill";
@@ -55,7 +62,7 @@ export function CharacterEditorForm({ editId }: { editId?: string }) {
   const [accent, setAccent] = useState(existing?.accentColor ?? randomAccent());
   const [avatar, setAvatar] = useState<string | undefined>(existing?.avatar);
   const [banner, setBanner] = useState<string | undefined>(existing?.banner);
-  const [tags, setTags] = useState(existing?.tags.join(", ") ?? "");
+  const [tags, setTags] = useState<string[]>(() => normalizeCharacterTags(existing?.tags));
   const [privacy, setPrivacy] = useState<Privacy>(
     existing?.privacy ?? currentAuthor?.settings.defaultPrivacy ?? "private"
   );
@@ -82,12 +89,15 @@ export function CharacterEditorForm({ editId }: { editId?: string }) {
     [pronouns, occupation, location, eraTag]
   );
 
+  function toggleTag(tag: string) {
+    setTags((prev) => (prev.includes(tag) ? prev.filter((x) => x !== tag) : [...prev, tag]));
+  }
+
   function save() {
     if (!canSave) return;
-    const tagList = tags.split(",").map((s) => s.trim().replace(/^#/, "")).filter(Boolean);
     const payload = {
       displayName, handle: normalized, bio, pronouns, occupation, location, eraTag,
-      voiceNote, accentColor: accent, avatar, banner, tags: tagList, privacy,
+      voiceNote, accentColor: accent, avatar, banner, tags, privacy,
     };
     if (existing) {
       updateCharacter(existing.id, payload);
@@ -133,6 +143,11 @@ export function CharacterEditorForm({ editId }: { editId?: string }) {
               {flavor.length > 0 && (
                 <View style={styles.flavorRow}>
                   {flavor.map((f) => <Pill key={f}>{f as string}</Pill>)}
+                </View>
+              )}
+              {tags.length > 0 && (
+                <View style={styles.flavorRow}>
+                  {tags.map((tg) => <Pill key={tg} tone="accent">{tg}</Pill>)}
                 </View>
               )}
               {!!voiceNote.trim() && <Text style={[styles.previewVoice, { color: t.accent }]}>Voice: “{voiceNote}”</Text>}
@@ -225,7 +240,36 @@ export function CharacterEditorForm({ editId }: { editId?: string }) {
         </View>
 
         <Input t={t} label="Voice note" value={voiceNote} onChangeText={setVoiceNote} placeholder="How do they speak?" hint="Shown by the composer while writing as them." />
-        <Input t={t} label="Tags" value={tags} onChangeText={setTags} placeholder="noir, detective (comma separated)" />
+
+        {/* Tags — optional, curated multi-select */}
+        <View style={styles.field}>
+          <Label t={t}>Tags</Label>
+          <Text style={[styles.hint, { color: t.ink3 }]}>Optional. Tap to mark their genre, tone, and role.</Text>
+          {CHARACTER_TAG_GROUPS.map((group) => (
+            <View key={group.label} style={styles.tagGroup}>
+              <Text style={[styles.tagGroupLabel, { color: t.ink2 }]}>{group.label}</Text>
+              <View style={styles.tagChips}>
+                {group.tags.map((tag) => {
+                  const on = tags.includes(tag);
+                  return (
+                    <Pressable
+                      key={tag}
+                      onPress={() => toggleTag(tag)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: on }}
+                      style={[
+                        styles.tagChip,
+                        { borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accent : t.surface },
+                      ]}
+                    >
+                      <Text style={[styles.tagChipText, { color: on ? t.accentInk : t.ink2 }]}>{tag}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+        </View>
 
         {/* Accent */}
         <View style={styles.field}>
@@ -342,6 +386,11 @@ const styles = StyleSheet.create({
   handleRow: { justifyContent: "center" },
   atSign: { position: "absolute", left: space[3], zIndex: 1, fontWeight: "600", fontSize: type.base },
   handleInput: { paddingLeft: space[5] },
+  tagGroup: { gap: space[2], marginTop: space[2] },
+  tagGroupLabel: { fontSize: type.xs, fontWeight: "600" },
+  tagChips: { flexDirection: "row", flexWrap: "wrap", gap: space[2] },
+  tagChip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: space[2] },
+  tagChipText: { fontSize: type.sm, fontWeight: "500" },
   swatches: { flexDirection: "row", flexWrap: "wrap", gap: space[2], marginTop: space[2] },
   swatch: { width: 36, height: 36, borderRadius: 999 },
   privacyRow: { flexDirection: "row", gap: space[2], marginTop: space[1] },

@@ -65,7 +65,7 @@ export function buildSeedDB(): WroomDB {
     eraTag: "1947 · noir",
     voiceNote: "Clipped, wry, hard-boiled. Speaks in short truths.",
     privacy: "private",
-    tags: ["noir", "detective"],
+    tags: ["Noir", "Mystery", "Protagonist"],
     createdAt: days(28),
     lastActiveAt: mins(12),
   };
@@ -83,7 +83,7 @@ export function buildSeedDB(): WroomDB {
     eraTag: "1947 · noir",
     voiceNote: "Eloquent, restless, a little too in love with a good line.",
     privacy: "private",
-    tags: ["noir", "press"],
+    tags: ["Noir", "Gritty", "Sidekick"],
     createdAt: days(26),
     lastActiveAt: hrs(2),
   };
@@ -101,7 +101,7 @@ export function buildSeedDB(): WroomDB {
     eraTag: "1947 · noir",
     voiceNote: "Warm, oblique, romantic. Answers questions with images.",
     privacy: "private",
-    tags: ["noir", "music"],
+    tags: ["Noir", "Romance", "Melancholy"],
     createdAt: days(24),
     lastActiveAt: hrs(6),
   };
@@ -119,7 +119,7 @@ export function buildSeedDB(): WroomDB {
     eraTag: "1947 · noir",
     voiceNote: "Gruff, procedural, secretly weary. Cop cadence.",
     privacy: "private",
-    tags: ["noir", "police"],
+    tags: ["Noir", "Antagonist", "Gritty"],
     createdAt: days(22),
     lastActiveAt: days(1),
   };

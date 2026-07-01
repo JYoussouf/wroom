@@ -73,7 +73,7 @@ function migrate(db: WroomDB): WroomDB {
     drafts: db.drafts ?? {},
     session: db.session ?? { authorId: null },
     authors: db.authors ?? [],
-    characters: db.characters ?? [],
+    characters: (db.characters ?? []).map((c) => ({ ...c, tags: c.tags ?? [] })),
     worldAccounts: db.worldAccounts ?? [],
     follows: db.follows ?? [],
     blocks: db.blocks ?? [],

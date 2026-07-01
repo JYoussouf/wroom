@@ -11,6 +11,7 @@ import {
   profilePosts,
   profileTimeline,
   resolveAccount,
+  normalizeCharacterTags,
 } from "@wroom/shared";
 
 import { Avatar } from "@/components/Avatar";
@@ -52,6 +53,7 @@ export default function ProfileScreen() {
     acc.kind === "character"
       ? [acc.pronouns, acc.occupation, acc.location, acc.eraTag].filter(Boolean)
       : [];
+  const tags = acc.kind === "character" ? normalizeCharacterTags(acc.tags) : [];
 
   const header = (
     <View>
@@ -125,6 +127,13 @@ export default function ProfileScreen() {
               <View style={styles.flavorRow}>
                 {flavors.map((f) => (
                   <Pill key={f}>{f as string}</Pill>
+                ))}
+              </View>
+            )}
+            {tags.length > 0 && (
+              <View style={styles.tagRow}>
+                {tags.map((tg) => (
+                  <Pill key={tg} tone="accent">{tg}</Pill>
                 ))}
               </View>
             )}
@@ -240,6 +249,7 @@ const styles = StyleSheet.create({
   handle: { fontSize: type.base },
   bio: { fontFamily: fonts.serif, fontSize: type.base, lineHeight: type.base * 1.5, marginTop: space[3] },
   flavorRow: { flexDirection: "row", flexWrap: "wrap", gap: space[2], marginTop: space[3] },
+  tagRow: { flexDirection: "row", flexWrap: "wrap", gap: space[2], marginTop: space[2] },
   voice: { fontFamily: fonts.serif, fontSize: type.base, fontStyle: "italic", marginTop: space[3] },
   counts: { flexDirection: "row", gap: space[4], marginTop: space[4] },
   count: { flexDirection: "row", alignItems: "baseline" },

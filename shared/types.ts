@@ -84,7 +84,8 @@ export interface Character {
   privacy: Privacy;
   /** Per-character post length override; falls back to author default. */
   postLimit?: number;
-  tags: string[];
+  /** Curated preset tags (see shared/lib/tags.ts). Optional; treat missing as []. */
+  tags?: string[];
   createdAt: number;
   lastActiveAt: number;
 }

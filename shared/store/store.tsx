@@ -94,7 +94,7 @@ function roomFromServer(room: WroomDB, fallbackAuthor: Author): WroomDB {
   return {
     version: DB_VERSION,
     authors: [author],
-    characters: room.characters ?? [],
+    characters: (room.characters ?? []).map((c) => ({ ...c, tags: c.tags ?? [] })),
     worldAccounts: room.worldAccounts ?? [],
     follows: room.follows ?? [],
     posts: (room.posts ?? []).map((p) => ({
