@@ -35,7 +35,7 @@ export function GlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const opacity = useTabBarOpacity();
-  const { activeCharacter, currentAuthor, unreadNotificationCount } = useStore();
+  const { activeCharacter, unreadNotificationCount } = useStore();
 
   const liquid = isLiquidGlassAvailable();
 

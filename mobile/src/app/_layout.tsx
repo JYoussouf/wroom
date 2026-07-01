@@ -2,8 +2,7 @@ import "@/config/platform"; // side effect: bind shared platform seam (must be f
 
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
-import { Stack, useRouter, useSegments } from "expo-router";
-import { ThemeProvider, DarkTheme, DefaultTheme } from "expo-router";
+import { Stack, useRouter, useSegments , ThemeProvider, DarkTheme, DefaultTheme } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StoreProvider, useStore } from "@wroom/shared";

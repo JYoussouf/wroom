@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStore } from "@wroom/shared";
@@ -14,7 +14,7 @@ export function Toast() {
   const { toast, dismissToast } = useStore();
   const t = useWroomTheme();
   const insets = useSafeAreaInsets();
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!toast) return;

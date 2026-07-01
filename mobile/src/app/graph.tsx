@@ -49,7 +49,7 @@ export default function GraphScreen() {
       <ScreenHeader title="Relationships" />
       <ScrollView contentContainerStyle={{ padding: space[4], paddingBottom: space[7] }}>
         <Text style={[styles.intro, { color: t.ink2 }]}>
-          Who follows whom across {currentAuthor?.name}'s cast.
+          Who follows whom across {currentAuthor?.name}&apos;s cast.
         </Text>
 
         {myCharacters.length < 2 ? (

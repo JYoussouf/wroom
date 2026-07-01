@@ -329,7 +329,7 @@ export default function SettingsScreen() {
       <Group title="About" t={t}>
         <Text style={[styles.about, { color: t.ink2 }]}>
           ✦ wroom is a tool for authoring fiction. Every character is invented and every post
-          is make-believe — a writer's craft, never a real or affiliated account.
+          is make-believe — a writer&apos;s craft, never a real or affiliated account.
         </Text>
         <RowBtn label="Log out" icon="log-out" t={t} onPress={confirmLogout} />
       </Group>

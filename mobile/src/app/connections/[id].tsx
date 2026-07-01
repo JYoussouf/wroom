@@ -70,7 +70,7 @@ export default function ConnectionsScreen() {
           isOwn && active === "following" ? (
             <View>
               <View style={styles.discoverHead}>
-                <Text style={[styles.sectionLabel, { color: t.ink3 }]}>Add to {name}'s world</Text>
+                <Text style={[styles.sectionLabel, { color: t.ink3 }]}>Add to {name}&apos;s world</Text>
                 <Pressable onPress={() => setWorldSheet(true)} style={styles.worldBtn}>
                   <Feather name="plus" size={15} color={t.accent} />
                   <Text style={[styles.worldBtnText, { color: t.accent }]}>World account</Text>

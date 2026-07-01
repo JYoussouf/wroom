@@ -32,21 +32,13 @@ export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
   const { db, activeCharacterId, toggleLike, toggleRepost, flashPostId, showToast } = useStore();
   const router = useRouter();
   const t = useWroomTheme();
-  const author = resolveAccount(db, post.characterId);
-  if (!author) return null;
-
-  const name = author.kind === "character" ? author.displayName : author.name;
-  const accent = author.accentColor;
-  const liked = activeCharacterId ? post.likedBy.includes(activeCharacterId) : false;
-  const reposted = activeCharacterId ? post.repostedBy.includes(activeCharacterId) : false;
-  const replyCount = db.posts.filter((p) => p.parentPostId === post.id).length;
-  const flash = flashPostId === post.id;
 
   // Collapse long bodies in the feed; `needsToggle === null` is the one-shot
   // measuring pass that decides whether the post overflows COLLAPSED_LINES.
   // Seed from the per-id cache so already-measured posts (e.g. recycled rows
-  // scrolling back in) render at their final clamp on first paint — no
-  // re-measure, no height pop. `expanded` stays per-mount.
+  // scrolling back in) render at their final clamp on first paint - no
+  // re-measure, no height pop. `expanded` stays per-mount. These hooks run
+  // before the early return below so hook order stays stable across renders.
   const [expanded, setExpanded] = useState(false);
   const [needsToggle, setNeedsToggle] = useState<boolean | null>(
     () => overflowCache.get(post.id) ?? null
@@ -59,6 +51,16 @@ export const PostCard = memo(function PostCard({ post, emphasis }: Props) {
     },
     [post.id]
   );
+
+  const author = resolveAccount(db, post.characterId);
+  if (!author) return null;
+
+  const name = author.kind === "character" ? author.displayName : author.name;
+  const accent = author.accentColor;
+  const liked = activeCharacterId ? post.likedBy.includes(activeCharacterId) : false;
+  const reposted = activeCharacterId ? post.repostedBy.includes(activeCharacterId) : false;
+  const replyCount = db.posts.filter((p) => p.parentPostId === post.id).length;
+  const flash = flashPostId === post.id;
 
   return (
     <Pressable

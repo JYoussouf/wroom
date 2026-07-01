@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useRef } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { Animated, type NativeSyntheticEvent, type NativeScrollEvent } from "react-native";
 
 /**
@@ -22,7 +22,7 @@ interface TabBarChrome {
 const Ctx = createContext<TabBarChrome | null>(null);
 
 export function TabBarChromeProvider({ children }: { children: React.ReactNode }) {
-  const barOpacity = useRef(new Animated.Value(ACTIVE)).current;
+  const [barOpacity] = useState(() => new Animated.Value(ACTIVE));
 
   const value = useMemo<TabBarChrome>(() => {
     const to = (v: number) =>
