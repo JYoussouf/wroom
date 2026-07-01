@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -74,7 +73,7 @@ export function NewWorldAccountSheet({
   return (
     <Modal visible={open} animationType="slide" transparent onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={close}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <KeyboardAvoidingView behavior="padding">
           <Pressable style={[styles.sheet, { backgroundColor: t.bgElevated }]} onPress={() => {}}>
             <View style={[styles.grabber, { backgroundColor: t.border }]} />
             <Text style={[styles.title, { color: t.ink }]}>New world account</Text>
