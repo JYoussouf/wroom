@@ -56,7 +56,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/wroom-icon-transparent.png",
+          "icon": "./assets/images/wroom-notification-icon.png",
           "color": "#b4532a"
         }
       ],
