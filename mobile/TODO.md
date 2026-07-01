@@ -35,7 +35,3 @@ Play internal submissions (those use manually-attached build 5 / manual AAB).
 ## Apple
 - [ ] Optional: org conversion / D-U-N-S so the developer name shows "wroom"
   instead of the legal name (cosmetic; do before public launch if wanted).
-
-## Pre-existing (not from this work)
-- [ ] 66 tsc errors in `shared/` (type-resolution baseline; Metro/EAS build is
-  clean, so non-blocking). Worth a cleanup pass.
